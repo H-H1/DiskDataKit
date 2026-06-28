@@ -1,0 +1,5 @@
+# 忽略所有 exe
+*.exe
+
+# 但不忽略这个特殊的（用 ! 取反）
+!tools/special.exe
