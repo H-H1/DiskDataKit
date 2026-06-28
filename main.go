@@ -38,35 +38,73 @@ type listResponse struct {
 	Err    string     `json:"error,omitempty"`
 }
 
+// 缓存当前系统信息，避免反复调用 runtime.GOOS
+var (
+	goos      = runtime.GOOS
+	isWindows = goos == "windows"
+	isDarwin  = goos == "darwin"
+	isLinux   = goos == "linux"
+)
+
 func main() {
-	// 将嵌入的 web 目录作为静态资源服务
+	fmt.Printf("DiskDataKit 已启动 | 系统: %s\n", goos)
+
+	// 将嵌入的 web 目录作为静态资源服务（禁用缓存，确保更新后立即生效）
 	webContent, err := fs.Sub(webFS, "web")
 	if err != nil {
 		log.Fatalf("无法加载嵌入的前端资源: %v", err)
 	}
-	http.Handle("/", http.FileServer(http.FS(webContent)))
+	http.Handle("/", noCache(http.FileServer(http.FS(webContent))))
 	http.HandleFunc("/api/files", handleListFiles)
 	http.HandleFunc("/api/drives", handleListDrives)
+	http.HandleFunc("/api/size", handleSize)
 
 	addr := ":8080"
 	url := "http://localhost" + addr
-	fmt.Printf("DiskDataKit 已启动\n访问 %s 查看文件管理界面\n", url)
+	fmt.Printf("访问 %s 查看文件管理界面\n", url)
 	go openBrowser(url)
 	log.Fatal(http.ListenAndServe(addr, nil))
+}
+
+// noCache 包装 handler，添加禁止缓存的响应头。
+func noCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		h.ServeHTTP(w, r)
+	})
 }
 
 // openBrowser 调用系统默认浏览器打开指定地址。
 func openBrowser(url string) {
 	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
+	switch {
+	case isWindows:
 		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
-	case "darwin":
+	case isDarwin:
 		cmd = exec.Command("open", url)
 	default:
 		cmd = exec.Command("xdg-open", url)
 	}
 	_ = cmd.Start()
+}
+
+// handleSize 异步计算单个目录的总大小（前端并发请求）。
+func handleSize(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	path := r.URL.Query().Get("path")
+	if path == "" {
+		json.NewEncoder(w).Encode(map[string]any{"path": "", "size": 0, "error": "缺少 path 参数"})
+		return
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"path": path, "size": 0, "error": err.Error()})
+		return
+	}
+	size := dirSize(abs)
+	json.NewEncoder(w).Encode(map[string]any{"path": abs, "size": size})
 }
 
 // handleListFiles 列出指定路径下的文件与目录。
@@ -99,7 +137,14 @@ func handleListFiles(w http.ResponseWriter, r *http.Request) {
 
 	entries, err := os.ReadDir(abs)
 	if err != nil {
-		writeErr(w, abs, err)
+		// 无权限访问时返回空列表，而不是报错中断
+		resp := listResponse{
+			Path:   abs,
+			Parent: parentPath(abs),
+			Items:  []FileItem{},
+			IsRoot: isRoot(abs),
+		}
+		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -149,7 +194,7 @@ func handleListDrives(w http.ResponseWriter, r *http.Request) {
 
 // listRoots 获取系统可用的根路径列表。
 func listRoots() []string {
-	if runtime.GOOS == "windows" {
+	if isWindows {
 		var roots []string
 		for c := 'A'; c <= 'Z'; c++ {
 			drive := string(c) + `:\`
@@ -188,6 +233,21 @@ func fileExt(name string, isDir bool) string {
 	}
 	ext := strings.ToLower(filepath.Ext(name))
 	return strings.TrimPrefix(ext, ".")
+}
+
+// dirSize 递归计算目录的总大小（字节），遇到错误跳过对应项。
+func dirSize(path string) int64 {
+	var total int64
+	_ = filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil || info == nil {
+			return nil
+		}
+		if !info.IsDir() {
+			total += info.Size()
+		}
+		return nil
+	})
+	return total
 }
 
 // writeErr 在出错时返回包含错误信息的响应。
