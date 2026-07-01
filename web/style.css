@@ -176,13 +176,43 @@ body {
 }
 
 .brand-name {
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    background: linear-gradient(135deg, #ffffff 0%, #b8bcc4 100%);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #d6f5f0 30%,
+        var(--accent) 55%,
+        var(--accent-2) 100%
+    );
+    background-size: 220% 220%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 12px rgba(78, 224, 208, 0.28));
+    animation: titleShine 7s var(--ease) infinite;
+    position: relative;
+}
+
+/* 标题光泽扫过 */
+.brand-name::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 35%,
+        rgba(255, 255, 255, 0.65) 50%,
+        transparent 65%
+    );
+    background-size: 250% 100%;
+    background-position: 150% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: titleSweep 5.5s var(--ease) infinite;
+    pointer-events: none;
 }
 
 .brand-dot {
@@ -265,6 +295,32 @@ body {
     transform: translateY(-2px);
 }
 
+/* 强调按钮（选择文件夹） */
+.btn-accent {
+    background: rgba(78, 224, 208, 0.1);
+    border-color: rgba(78, 224, 208, 0.25);
+    color: var(--accent);
+}
+
+.btn-accent:hover {
+    background: rgba(78, 224, 208, 0.18);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md), 0 0 16px rgba(78, 224, 208, 0.15);
+    color: var(--accent);
+}
+
+.btn-accent:hover::before {
+    opacity: 0;
+}
+
+#pickBtn svg {
+    transition: transform 0.3s var(--ease);
+}
+
+#pickBtn:hover svg {
+    transform: scale(1.15);
+}
+
 /* ==================== 输入框 ==================== */
 .select {
     background: var(--surface);
@@ -297,6 +353,26 @@ body {
 .select option {
     background: var(--surface-solid);
     color: var(--fg-default);
+}
+
+.select optgroup {
+    background: var(--surface-solid);
+    color: var(--fg-subtle);
+    font-style: normal;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-top: 4px;
+}
+
+.select optgroup option {
+    font-size: 13px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--fg-default);
+    padding: 3px 8px;
 }
 
 /* ==================== 主容器 ==================== */
@@ -345,7 +421,7 @@ body {
 }
 
 .file-card {
-    animation-delay: 0.08s;
+    animation-delay: 0.16s;
 }
 
 .breadcrumb-card {
@@ -394,6 +470,42 @@ body {
     font-weight: 600;
     border: 1px solid rgba(78, 224, 208, 0.2);
     font-variant-numeric: tabular-nums;
+}
+
+.size-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    height: 20px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    transition: all 0.3s var(--ease);
+}
+
+.size-badge.computing {
+    background: rgba(91, 158, 255, 0.08);
+    color: var(--accent-2);
+    border: 1px solid rgba(91, 158, 255, 0.2);
+}
+
+.size-badge.computing::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.size-badge.done {
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border: 1px solid rgba(78, 224, 208, 0.2);
+    box-shadow: 0 0 12px rgba(78, 224, 208, 0.1);
 }
 
 .card-header-line {
@@ -625,6 +737,135 @@ body {
     letter-spacing: 0.3px;
 }
 
+/* ==================== 帕累托图 ==================== */
+.chart-card {
+    animation-delay: 0.08s;
+}
+
+.chart-card .card-header {
+    padding: 12px 18px;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--fg-muted);
+    margin-left: auto;
+    margin-right: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.legend-bar {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--accent), rgba(78, 224, 208, 0.3));
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.legend-line {
+    width: 18px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--accent-2);
+    box-shadow: 0 0 6px rgba(91, 158, 255, 0.4);
+    position: relative;
+}
+
+.legend-line::after {
+    content: "";
+    position: absolute;
+    right: -3px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 6px rgba(91, 158, 255, 0.5);
+}
+
+.chart-hint {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 8px;
+    height: 18px;
+    border-radius: 18px;
+    background: rgba(78, 224, 208, 0.08);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 500;
+    border: 1px solid rgba(78, 224, 208, 0.15);
+}
+
+.chart-hint::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 5px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.chart-wrap {
+    position: relative;
+    padding: 12px 18px 18px;
+}
+
+#paretoCanvas {
+    display: block;
+    width: 100%;
+    height: 280px;
+    cursor: crosshair;
+}
+
+.chart-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(12, 14, 19, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--fg-default);
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    white-space: nowrap;
+    transform: translate(-50%, calc(-100% - 10px));
+    transition: opacity 0.15s var(--ease);
+}
+
+.chart-tooltip .tt-name {
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 3px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chart-tooltip .tt-size {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+.chart-tooltip .tt-pct {
+    color: var(--accent-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
 /* ==================== 工具类 ==================== */
 .hidden {
     display: none !important;
@@ -699,6 +940,26 @@ body {
     50% {
         opacity: 0.6;
         box-shadow: 0 0 16px var(--accent-glow);
+    }
+}
+
+/* 标题渐变流动 */
+@keyframes titleShine {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* 标题光泽扫过 */
+@keyframes titleSweep {
+    0% {
+        background-position: 150% 0;
+    }
+    60%, 100% {
+        background-position: -150% 0;
     }
 }
 
