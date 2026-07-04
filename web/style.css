@@ -165,7 +165,7 @@ body {
 }
 
 .brand-logo {
-    color: var(--accent);
+    border-radius: 4px;
     filter: drop-shadow(0 0 8px var(--accent-glow));
     transition: transform 0.4s var(--ease), filter 0.4s var(--ease);
 }
@@ -761,6 +761,60 @@ body {
     gap: 7px;
 }
 
+.legend-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s var(--ease);
+}
+
+.legend-toggle input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border-strong);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s var(--ease);
+    flex-shrink: 0;
+}
+
+.legend-toggle input[type="checkbox"]:checked {
+    background: var(--accent-subtle);
+    border-color: var(--accent);
+}
+
+.legend-toggle input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 0px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.legend-toggle input[type="checkbox"]:not(:checked) ~ .legend-line,
+.legend-toggle input[type="checkbox"]:not(:checked) ~ .legend-text {
+    opacity: 0.35;
+}
+
+.legend-toggle:hover {
+    opacity: 0.85;
+}
+
+.legend-text {
+    font-size: 12px;
+    color: var(--fg-muted);
+}
+
 .legend-bar {
     width: 14px;
     height: 10px;
@@ -789,6 +843,16 @@ body {
     border-radius: 50%;
     background: var(--accent-2);
     box-shadow: 0 0 6px rgba(91, 158, 255, 0.5);
+}
+
+.legend-line-self {
+    background: #c084fc;
+    box-shadow: 0 0 6px rgba(192, 132, 252, 0.4);
+}
+
+.legend-line-self::after {
+    background: #c084fc;
+    box-shadow: 0 0 6px rgba(192, 132, 252, 0.5);
 }
 
 .chart-hint {
@@ -864,6 +928,209 @@ body {
     font-family: var(--font-mono);
     font-size: 11px;
     margin-top: 2px;
+}
+
+/* ==================== 展开区域 ==================== */
+.expand-section {
+    border-top: 1px solid var(--border);
+    animation: fadeUp 0.4s var(--ease-out) both;
+}
+
+.expand-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.expand-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-bright);
+}
+
+.expand-title span {
+    color: var(--accent);
+}
+
+.expand-close {
+    background: none;
+    border: none;
+    color: var(--fg-muted);
+    font-size: 20px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease);
+    line-height: 1;
+}
+
+.expand-close:hover {
+    background: var(--danger-subtle);
+    color: var(--danger);
+}
+
+.expand-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-expand-more {
+    background: var(--accent-subtle);
+    border: 1px solid var(--accent-dim, rgba(78, 224, 208, 0.3));
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+    white-space: nowrap;
+}
+
+.btn-expand-more:hover {
+    background: rgba(78, 224, 208, 0.15);
+    box-shadow: 0 0 12px rgba(78, 224, 208, 0.2);
+}
+
+.btn-expand-more span {
+    font-family: var(--font-mono);
+    font-weight: 600;
+}
+
+#expandCanvas {
+    display: block;
+    width: 100%;
+    height: 240px;
+}
+
+/* 可点击的"其他"条样式 */
+.chart-other-hint {
+    cursor: pointer;
+}
+
+/* ==================== 弹框 ==================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s var(--ease) both;
+}
+
+.modal-box {
+    background: var(--surface-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 24px;
+    width: 340px;
+    max-width: 90vw;
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.3s var(--ease-out) both;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 8px;
+}
+
+.modal-desc {
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin-bottom: 16px;
+}
+
+.modal-input {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--fg-default);
+    font-size: 15px;
+    font-family: var(--font-mono);
+    outline: none;
+    transition: all 0.2s var(--ease);
+    margin-bottom: 18px;
+}
+
+.modal-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ==================== 上下文菜单 ==================== */
+.ctx-menu {
+    position: fixed;
+    z-index: 300;
+    min-width: 200px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: ctxPop 0.15s var(--ease-out) both;
+}
+
+@keyframes ctxPop {
+    from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--fg-default);
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s var(--ease);
+    text-align: left;
+}
+
+.ctx-item:hover {
+    background: var(--accent-subtle);
+    color: var(--accent);
+}
+
+.ctx-icon {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.ctx-item:hover .ctx-icon {
+    opacity: 1;
 }
 
 /* ==================== 工具类 ==================== */

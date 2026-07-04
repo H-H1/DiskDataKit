@@ -15,6 +15,18 @@ const paretoCanvas = document.getElementById('paretoCanvas');
 const chartTooltip = document.getElementById('chartTooltip');
 const chartHint = document.getElementById('chartHint');
 const chartCtx = paretoCanvas.getContext('2d');
+const expandSection = document.getElementById('expandSection');
+const expandLabel = document.getElementById('expandLabel');
+const expandCanvas = document.getElementById('expandCanvas');
+const expandCtx = expandCanvas.getContext('2d');
+const expandTooltip = document.getElementById('expandTooltip');
+const expandModal = document.getElementById('expandModal');
+const expandInput = document.getElementById('expandInput');
+const expandMoreBtn = document.getElementById('expandMore');
+const remainCountEl = document.getElementById('remainCount');
+const ctxMenu = document.getElementById('ctxMenu');
+const ctxOpenExplorer = document.getElementById('ctxOpenExplorer');
+let ctxTargetPath = '';   // 当前右键菜单对应的文件路径
 
 let currentPath = '';
 let loadToken = 0;
@@ -29,9 +41,31 @@ let chartBarRects = [];       // 每个条的命中区域 [{x, y, w, h, idx}]
 let chartResizeTimer = null;
 const MAX_BARS = 40;
 
+// 折线开关
+let showSelfLine = true;
+let showCumulativeLine = true;
+
+// "其他"展开
+let chartTailItems = [];      // 被合并到"其他"的尾部项
+let otherBarRect = null;      // "其他"条形的命中区域
+let expandData = [];          // 展开图的数据
+let expandAnimId = null;
+let expandBarRects = [];      // 展开图条形命中区域
+let expandHoverIdx = -1;      // 展开图悬停索引
+let modalDefaultCount = 50;   // 弹框默认值
+
 // 总大小统计
 let totalSize = 0;
 let dirComputingCount = 0;
+
+// 心跳：定期通知后端前端仍在线，关闭浏览器后后端自动退出
+setInterval(() => {
+    fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+}, 10000);
+// 页面卸载时立即发一次，刷新时避免后端误退
+window.addEventListener('beforeunload', () => {
+    navigator.sendBeacon('/api/heartbeat');
+});
 
 // 根据扩展名映射文件图标
 const ICONS = {
@@ -144,6 +178,14 @@ async function loadPath(path) {
     chartCard.dataset.shown = '';
     chartItems = [];
     chartData = [];
+    chartTailItems = [];
+    otherBarRect = null;
+    expandSection.classList.add('hidden');
+    expandData = [];
+    expandBarRects = [];
+    expandHoverIdx = -1;
+    expandTooltip.classList.add('hidden');
+    expandMoreBtn.classList.add('hidden');
 
     try {
         const url = '/api/files' + (path ? '?path=' + encodeURIComponent(path) : '');
@@ -384,12 +426,18 @@ function updateChart() {
     // 超过 MAX_BARS 则合并尾部为"其他"
     if (computed.length > MAX_BARS) {
         const head = computed.slice(0, MAX_BARS - 1);
-        const tail = computed.slice(MAX_BARS - 1);
-        const tailSum = tail.reduce((s, d) => s + d.size, 0);
-        head.push({ name: `其他 (${tail.length} 项)`, size: tailSum, isDir: false, path: '', computed: true });
+        chartTailItems = computed.slice(MAX_BARS - 1);
+        const tailSum = chartTailItems.reduce((s, d) => s + d.size, 0);
+        head.push({ name: `其他 (${chartTailItems.length} 项)`, size: tailSum, isDir: false, path: '', computed: true });
         chartData = head;
     } else {
+        chartTailItems = [];
         chartData = computed;
+    }
+
+    // 有新数据时隐藏展开区
+    if (chartTailItems.length === 0) {
+        expandSection.classList.add('hidden');
     }
 
     // 是否仍有未计算的条目
@@ -425,6 +473,40 @@ function startChartAnim() {
         }
     }
     chartAnimId = requestAnimationFrame(frame);
+}
+
+// 绘制折线（含圆点 + 发光），progress 控制从左到右逐步绘制
+function drawLine(points, progress, color, glowColor) {
+    const drawCount = Math.max(1, Math.ceil(points.length * progress));
+
+    chartCtx.strokeStyle = color;
+    chartCtx.lineWidth = 2;
+    chartCtx.lineJoin = 'round';
+    chartCtx.lineCap = 'round';
+    chartCtx.shadowColor = glowColor;
+    chartCtx.shadowBlur = 6;
+
+    chartCtx.beginPath();
+    for (let i = 0; i < drawCount; i++) {
+        const p = points[i];
+        if (i === 0) chartCtx.moveTo(p.x, p.y);
+        else chartCtx.lineTo(p.x, p.y);
+    }
+    chartCtx.stroke();
+    chartCtx.shadowBlur = 0;
+
+    // 圆点
+    for (let i = 0; i < drawCount; i++) {
+        const p = points[i];
+        chartCtx.fillStyle = '#0c0e13';
+        chartCtx.beginPath();
+        chartCtx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        chartCtx.fill();
+        chartCtx.fillStyle = color;
+        chartCtx.beginPath();
+        chartCtx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+        chartCtx.fill();
+    }
 }
 
 // 绘制帕累托图
@@ -485,15 +567,19 @@ function drawPareto(progress) {
 
     // ---- 绘制条形 ----
     chartBarRects = [];
+    otherBarRect = null;
+    const hasOther = chartTailItems.length > 0;
     let cumSum = 0;
-    const linePoints = [];
+    const linePoints = [];      // 累计百分比
+    const selfPoints = [];      // 自身占比
 
     for (let i = 0; i < n; i++) {
         const d = data[i];
         cumSum += d.size;
         const cumPct = (cumSum / total) * 100;
+        const selfPct = (d.size / total) * 100;
 
-        const barH = (d.size / maxVal) * ch;
+        const barH = Math.max((d.size / maxVal) * ch, 2);
         const x = ml + i * slot + (slot - barW) / 2;
 
         // 逐条延迟动画
@@ -534,49 +620,29 @@ function drawPareto(progress) {
 
         chartBarRects.push({ x, y: mt + ch - barH, w: barW, h: barH, idx: i });
 
-        // 记录折线点
-        linePoints.push({
-            x: x + barW / 2,
-            y: mt + ch - (cumPct / 100) * ch,
-            pct: cumPct,
-            name: d.name,
-            size: d.size
-        });
+        // 记录"其他"条的命中区域
+        if (hasOther && i === n - 1) {
+            otherBarRect = { x, y: mt + ch - barH, w: barW, h: barH };
+        }
+
+        const cx = x + barW / 2;
+        linePoints.push({ x: cx, y: mt + ch - (cumPct / 100) * ch, pct: cumPct, name: d.name, size: d.size });
+        selfPoints.push({ x: cx, y: mt + ch - (selfPct / 100) * ch, pct: selfPct, name: d.name, size: d.size });
     }
 
     // ---- 绘制累计百分比折线 ----
-    if (progress > 0.55 && linePoints.length > 0) {
+    // ---- 绘制折线（自身占比 + 累计百分比） ----
+    if (progress > 0.55) {
         const lineProgress = Math.min(1, (progress - 0.55) / 0.45);
-        const drawCount = Math.max(1, Math.ceil(linePoints.length * lineProgress));
 
-        // 折线阴影
-        chartCtx.strokeStyle = 'rgba(91, 158, 255, 0.9)';
-        chartCtx.lineWidth = 2;
-        chartCtx.lineJoin = 'round';
-        chartCtx.lineCap = 'round';
-        chartCtx.shadowColor = 'rgba(91, 158, 255, 0.4)';
-        chartCtx.shadowBlur = 6;
-
-        chartCtx.beginPath();
-        for (let i = 0; i < drawCount; i++) {
-            const p = linePoints[i];
-            if (i === 0) chartCtx.moveTo(p.x, p.y);
-            else chartCtx.lineTo(p.x, p.y);
+        // 自身占比线（紫色）
+        if (showSelfLine && selfPoints.length > 0) {
+            drawLine(selfPoints, lineProgress, '#c084fc', 'rgba(192, 132, 252, 0.4)');
         }
-        chartCtx.stroke();
-        chartCtx.shadowBlur = 0;
 
-        // 折线圆点
-        for (let i = 0; i < drawCount; i++) {
-            const p = linePoints[i];
-            chartCtx.fillStyle = '#0c0e13';
-            chartCtx.beginPath();
-            chartCtx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-            chartCtx.fill();
-            chartCtx.fillStyle = '#5b9eff';
-            chartCtx.beginPath();
-            chartCtx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
-            chartCtx.fill();
+        // 累计百分比线（蓝色）
+        if (showCumulativeLine && linePoints.length > 0) {
+            drawLine(linePoints, lineProgress, '#5b9eff', 'rgba(91, 158, 255, 0.4)');
         }
     }
 
@@ -640,10 +706,15 @@ function handleChartHover(e) {
         const pct = (d.size / total * 100).toFixed(1);
         const cumPct = (cum / total * 100).toFixed(1);
 
-        chartTooltip.innerHTML =
-            `<div class="tt-name">${d.name}</div>` +
-            `<div class="tt-size">大小: ${formatSize(d.size)} (${pct}%)</div>` +
-            `<div class="tt-pct">累计: ${cumPct}%</div>`;
+        let html = `<div class="tt-name">${d.name}</div>` +
+            `<div class="tt-size">大小: ${formatSize(d.size)}</div>`;
+        if (showSelfLine) html += `<div class="tt-pct" style="color:#c084fc">自身: ${pct}%</div>`;
+        if (showCumulativeLine) html += `<div class="tt-pct">累计: ${cumPct}%</div>`;
+        // "其他"条提示可点击展开
+        if (d.name.startsWith('其他')) {
+            html += `<div class="tt-pct" style="color:var(--accent);margin-top:4px">点击展开详情 →</div>`;
+        }
+        chartTooltip.innerHTML = html;
         chartTooltip.style.left = mx + 'px';
         chartTooltip.style.top = my + 'px';
         chartTooltip.classList.remove('hidden');
@@ -670,6 +741,421 @@ window.addEventListener('resize', () => {
 
 paretoCanvas.addEventListener('mousemove', handleChartHover);
 paretoCanvas.addEventListener('mouseleave', handleChartLeave);
+
+document.getElementById('toggleSelf').addEventListener('change', e => {
+    showSelfLine = e.target.checked;
+    if (chartData.length > 0 && !chartAnimId) drawPareto(1);
+});
+document.getElementById('toggleCumulative').addEventListener('change', e => {
+    showCumulativeLine = e.target.checked;
+    if (chartData.length > 0 && !chartAnimId) drawPareto(1);
+});
+
+// ==================== 上下文菜单 ====================
+
+// 在指定位置显示上下文菜单
+function showCtxMenu(clientX, clientY, filePath) {
+    ctxTargetPath = filePath;
+    ctxMenu.classList.remove('hidden');
+    // 防止超出视口
+    const rect = ctxMenu.getBoundingClientRect();
+    const maxX = window.innerWidth - rect.width - 8;
+    const maxY = window.innerHeight - rect.height - 8;
+    ctxMenu.style.left = Math.min(clientX, maxX) + 'px';
+    ctxMenu.style.top = Math.min(clientY, maxY) + 'px';
+}
+
+function hideCtxMenu() {
+    ctxMenu.classList.add('hidden');
+    ctxTargetPath = '';
+}
+
+// 点击"打开文件夹所在位置"
+ctxOpenExplorer.addEventListener('click', () => {
+    if (!ctxTargetPath) return;
+    fetch('/api/openInExplorer?path=' + encodeURIComponent(ctxTargetPath))
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                statusEl.textContent = '打开失败: ' + data.error;
+                statusEl.classList.remove('hidden');
+            }
+        })
+        .catch(() => {});
+    hideCtxMenu();
+});
+
+// 点击其他区域关闭菜单
+document.addEventListener('click', e => {
+    if (!ctxMenu.classList.contains('hidden') && !ctxMenu.contains(e.target)) {
+        hideCtxMenu();
+    }
+});
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideCtxMenu();
+});
+// 滚动时关闭
+window.addEventListener('scroll', hideCtxMenu, true);
+
+// 在主图中查找点击命中的条形
+function findBarAt(canvas, barRects, clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = clientX - rect.left;
+    const my = clientY - rect.top;
+    for (const r of barRects) {
+        if (mx >= r.x - 1 && mx <= r.x + r.w + 1 && my >= r.y - 2 && my <= r.y + r.h + 2) {
+            return r.idx;
+        }
+    }
+    return -1;
+}
+
+// ==================== "其他"展开逻辑 ====================
+
+// 点击主图：左键检测"其他"条或常规条，右键显示菜单
+paretoCanvas.addEventListener('click', e => {
+    const idx = findBarAt(paretoCanvas, chartBarRects, e.clientX, e.clientY);
+    if (idx < 0) return;
+
+    // "其他"条 → 打开展开弹框
+    if (idx === chartData.length - 1 && otherBarRect && chartTailItems.length > 0) {
+        modalDefaultCount = Math.min(chartTailItems.length, 50);
+        expandInput.value = modalDefaultCount;
+        expandInput.max = chartTailItems.length;
+        expandModal.classList.remove('hidden');
+        expandInput.focus();
+        expandInput.select();
+        return;
+    }
+
+    // 常规条 → 显示上下文菜单
+    const d = chartData[idx];
+    if (d.path) {
+        showCtxMenu(e.clientX, e.clientY, d.path);
+    }
+});
+
+// 右键主图 → 显示菜单
+paretoCanvas.addEventListener('contextmenu', e => {
+    const idx = findBarAt(paretoCanvas, chartBarRects, e.clientX, e.clientY);
+    if (idx < 0) return;
+    const d = chartData[idx];
+    if (d.path) {
+        e.preventDefault();
+        showCtxMenu(e.clientX, e.clientY, d.path);
+    }
+});
+
+// 弹框确认展开
+document.getElementById('expandConfirm').addEventListener('click', () => {
+    const count = parseInt(expandInput.value) || 50;
+    expandModal.classList.add('hidden');
+    showExpanded(Math.max(1, Math.min(count, chartTailItems.length)));
+});
+
+// 弹框取消
+document.getElementById('expandCancel').addEventListener('click', () => {
+    expandModal.classList.add('hidden');
+});
+
+// 回车确认
+expandInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('expandConfirm').click();
+    if (e.key === 'Escape') expandModal.classList.add('hidden');
+});
+
+// 关闭展开区
+document.getElementById('expandClose').addEventListener('click', () => {
+    expandSection.classList.add('hidden');
+    expandData = [];
+    expandBarRects = [];
+    expandHoverIdx = -1;
+    expandTooltip.classList.add('hidden');
+});
+
+// "展开剩余"按钮 → 重新打开弹框，默认值加上当前已展开的数量
+expandMoreBtn.addEventListener('click', () => {
+    modalDefaultCount = Math.min(expandData.length + 50, chartTailItems.length);
+    expandInput.value = modalDefaultCount;
+    expandInput.max = chartTailItems.length;
+    expandModal.classList.remove('hidden');
+    expandInput.focus();
+    expandInput.select();
+});
+
+// 展开图鼠标悬停 → 显示 Tooltip
+expandCanvas.addEventListener('mousemove', e => {
+    if (expandBarRects.length === 0) return;
+    const rect = expandCanvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    let found = -1;
+    for (const r of expandBarRects) {
+        if (mx >= r.x - 1 && mx <= r.x + r.w + 1 && my >= r.y - 2 && my <= r.y + r.h + 2) {
+            found = r.idx;
+            break;
+        }
+    }
+
+    if (found !== expandHoverIdx) {
+        expandHoverIdx = found;
+        if (!expandAnimId) drawExpanded(1);
+    }
+
+    if (found >= 0) {
+        const d = expandData[found];
+        const total = expandData.reduce((s, x) => s + x.size, 0);
+        const cum = expandData.slice(0, found + 1).reduce((s, x) => s + x.size, 0);
+        const pct = (d.size / total * 100).toFixed(1);
+        const cumPct = (cum / total * 100).toFixed(1);
+
+        let html = `<div class="tt-name">${d.name}</div>` +
+            `<div class="tt-size">大小: ${formatSize(d.size)}</div>`;
+        if (showSelfLine) html += `<div class="tt-pct" style="color:#c084fc">自身: ${pct}%</div>`;
+        if (showCumulativeLine) html += `<div class="tt-pct">累计: ${cumPct}%</div>`;
+        expandTooltip.innerHTML = html;
+        expandTooltip.style.left = mx + 'px';
+        expandTooltip.style.top = (my + 14) + 'px';
+        expandTooltip.classList.remove('hidden');
+    } else {
+        expandTooltip.classList.add('hidden');
+    }
+});
+
+expandCanvas.addEventListener('mouseleave', () => {
+    expandHoverIdx = -1;
+    expandTooltip.classList.add('hidden');
+    if (!expandAnimId) drawExpanded(1);
+});
+
+// 左键展开图 → 显示上下文菜单
+expandCanvas.addEventListener('click', e => {
+    const idx = findBarAt(expandCanvas, expandBarRects, e.clientX, e.clientY);
+    if (idx < 0) return;
+    const d = expandData[idx];
+    if (d.path) {
+        showCtxMenu(e.clientX, e.clientY, d.path);
+    }
+});
+
+// 右键展开图 → 显示菜单
+expandCanvas.addEventListener('contextmenu', e => {
+    const idx = findBarAt(expandCanvas, expandBarRects, e.clientX, e.clientY);
+    if (idx < 0) return;
+    const d = expandData[idx];
+    if (d.path) {
+        e.preventDefault();
+        showCtxMenu(e.clientX, e.clientY, d.path);
+    }
+});
+
+// 展开图绘制（复用 drawPareto 的逻辑，但用 expandCtx 和 expandCanvas）
+function showExpanded(count) {
+    expandData = chartTailItems.slice(0, count);
+    if (expandData.length === 0) return;
+
+    expandLabel.textContent = `其他 (${count}/${chartTailItems.length} 项)`;
+    expandSection.classList.remove('hidden');
+
+    // 检查是否有剩余未展开项
+    const remaining = chartTailItems.length - count;
+    if (remaining > 0) {
+        remainCountEl.textContent = remaining;
+        expandMoreBtn.classList.remove('hidden');
+    } else {
+        expandMoreBtn.classList.add('hidden');
+    }
+
+    // 启动展开图动画
+    if (expandAnimId) cancelAnimationFrame(expandAnimId);
+    const start = performance.now();
+    const duration = 800;
+
+    function frame(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        drawExpanded(eased);
+        if (t < 1) {
+            expandAnimId = requestAnimationFrame(frame);
+        } else {
+            expandAnimId = null;
+        }
+    }
+    expandAnimId = requestAnimationFrame(frame);
+}
+
+// 在展开 canvas 上绘制帕累托图
+function drawExpanded(progress) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = expandCanvas.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+    expandCanvas.width = W * dpr;
+    expandCanvas.height = H * dpr;
+    expandCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    expandCtx.clearRect(0, 0, W, H);
+
+    const data = expandData;
+    const n = data.length;
+    if (n === 0) return;
+
+    const ml = 56, mr = 52, mt = 14, mb = 42;
+    const cw = W - ml - mr;
+    const ch = H - mt - mb;
+    if (cw < 10 || ch < 10) return;
+
+    const total = data.reduce((s, d) => s + d.size, 0);
+    const maxVal = data[0].size;
+
+    const gap = Math.max(1, Math.min(3, cw / n * 0.12));
+    const barW = Math.max(1, cw / n - gap);
+    const slot = cw / n;
+
+    // 网格 + 左轴
+    expandCtx.font = '11px ui-monospace, monospace';
+    expandCtx.textAlign = 'right';
+    expandCtx.textBaseline = 'middle';
+    const gridLines = 4;
+    for (let g = 0; g <= gridLines; g++) {
+        const y = mt + ch - (ch * g / gridLines);
+        const val = maxVal * g / gridLines;
+        expandCtx.strokeStyle = g === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)';
+        expandCtx.lineWidth = 1;
+        expandCtx.beginPath();
+        expandCtx.moveTo(ml, y);
+        expandCtx.lineTo(W - mr, y);
+        expandCtx.stroke();
+        expandCtx.fillStyle = '#5c626e';
+        expandCtx.fillText(formatSize(val), ml - 8, y);
+    }
+
+    // 右轴百分比
+    expandCtx.textAlign = 'left';
+    for (let g = 0; g <= gridLines; g++) {
+        const y = mt + ch - (ch * g / gridLines);
+        expandCtx.fillStyle = '#5c626e';
+        expandCtx.fillText((g / gridLines * 100).toFixed(0) + '%', W - mr + 8, y);
+    }
+
+    // 条形
+    expandBarRects = [];
+    let cumSum = 0;
+    const linePoints = [];
+    const selfPoints = [];
+
+    for (let i = 0; i < n; i++) {
+        const d = data[i];
+        cumSum += d.size;
+        const cumPct = (cumSum / total) * 100;
+        const selfPct = (d.size / total) * 100;
+
+        const barH = Math.max((d.size / maxVal) * ch, 2);
+        const x = ml + i * slot + (slot - barW) / 2;
+
+        const delay = i * 0.02;
+        const localP = Math.max(0, Math.min(1, (progress - delay) / (1 - delay)));
+        const animH = barH * (1 - Math.pow(1 - localP, 3));
+        const y = mt + ch - animH;
+
+        const fadeFactor = i < 5 ? 1 : Math.max(0.2, 1 - (i - 5) / Math.max(n - 5, 1) * 0.65);
+        const isHover = i === expandHoverIdx;
+
+        const grad = expandCtx.createLinearGradient(0, mt + ch - barH, 0, mt + ch);
+        if (isHover) {
+            grad.addColorStop(0, `rgba(192, 132, 252, ${fadeFactor})`);
+            grad.addColorStop(0.7, `rgba(192, 132, 252, ${fadeFactor * 0.5})`);
+            grad.addColorStop(1, `rgba(192, 132, 252, ${fadeFactor * 0.1})`);
+        } else {
+            grad.addColorStop(0, `rgba(192, 132, 252, ${fadeFactor * 0.85})`);
+            grad.addColorStop(0.7, `rgba(192, 132, 252, ${fadeFactor * 0.35})`);
+            grad.addColorStop(1, `rgba(192, 132, 252, ${fadeFactor * 0.08})`);
+        }
+        expandCtx.fillStyle = grad;
+
+        if (isHover) {
+            expandCtx.shadowColor = 'rgba(192, 132, 252, 0.5)';
+            expandCtx.shadowBlur = 12;
+        }
+        expandCtx.fillRect(x, y, barW, animH);
+        expandCtx.shadowBlur = 0;
+
+        if (animH > 3 && i < 8) {
+            expandCtx.fillStyle = `rgba(255, 255, 255, ${fadeFactor * 0.3})`;
+            expandCtx.fillRect(x, y, barW, 1.5);
+        }
+
+        expandBarRects.push({ x, y: mt + ch - barH, w: barW, h: barH, idx: i });
+
+        const cx = x + barW / 2;
+        linePoints.push({ x: cx, y: mt + ch - (cumPct / 100) * ch, pct: cumPct, name: d.name, size: d.size });
+        selfPoints.push({ x: cx, y: mt + ch - (selfPct / 100) * ch, pct: selfPct });
+    }
+
+    // 折线
+    if (progress > 0.55) {
+        const lineProgress = Math.min(1, (progress - 0.55) / 0.45);
+        if (showSelfLine && selfPoints.length > 0) {
+            drawLineOn(expandCtx, selfPoints, lineProgress, '#c084fc', 'rgba(192, 132, 252, 0.4)');
+        }
+        if (showCumulativeLine && linePoints.length > 0) {
+            drawLineOn(expandCtx, linePoints, lineProgress, '#5b9eff', 'rgba(91, 158, 255, 0.4)');
+        }
+    }
+
+    // X 轴标签
+    expandCtx.font = '10px -apple-system, sans-serif';
+    expandCtx.textAlign = 'center';
+    expandCtx.textBaseline = 'top';
+    const labelStep = n > 20 ? Math.ceil(n / 8) : 1;
+    for (let i = 0; i < n; i++) {
+        if (i % labelStep !== 0 && i !== n - 1) continue;
+        const d = data[i];
+        const x = ml + i * slot + slot / 2;
+        let label = d.name;
+        if (label.length > 8) label = label.slice(0, 7) + '…';
+        expandCtx.fillStyle = i < 5 ? '#8b909a' : '#5c626e';
+        expandCtx.fillText(label, x, mt + ch + 6);
+    }
+}
+
+// 在指定 context 上绘制折线
+function drawLineOn(ctx, points, progress, color, glowColor) {
+    const drawCount = Math.max(1, Math.ceil(points.length * progress));
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 6;
+
+    ctx.beginPath();
+    for (let i = 0; i < drawCount; i++) {
+        const p = points[i];
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    for (let i = 0; i < drawCount; i++) {
+        const p = points[i];
+        ctx.fillStyle = '#0c0e13';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// 展开图也响应窗口缩放
+window.addEventListener('resize', () => {
+    if (expandData.length > 0 && !expandAnimId) drawExpanded(1);
+});
 
 // 加载磁盘列表与最近访问文件夹
 async function loadDrives() {

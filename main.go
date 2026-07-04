@@ -1,11 +1,14 @@
 package main
 
 import (
+	"compress/gzip"
 	"embed"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -19,6 +22,9 @@ import (
 
 //go:embed web
 var webFS embed.FS
+
+// 心跳：前端定期发送，超时则退出程序
+var lastHeartbeat = time.Now()
 
 // FileItem 描述单个文件或目录的信息。
 type FileItem struct {
@@ -78,12 +84,42 @@ func main() {
 	http.HandleFunc("/api/size", handleSize)
 	http.HandleFunc("/api/recent", handleRecent)
 	http.HandleFunc("/api/pickFolder", handlePickFolder)
+	http.HandleFunc("/api/openInExplorer", handleOpenInExplorer)
+	http.HandleFunc("/api/heartbeat", handleHeartbeat)
 
-	addr := ":8080"
+	// 心跳监控：前端关闭后 5 秒无心跳则退出
+	go func() {
+		for range time.Tick(5 * time.Second) {
+			if time.Since(lastHeartbeat) > 20*time.Second {
+				fmt.Println("浏览器已关闭，程序自动退出。")
+				os.Exit(0)
+			}
+		}
+	}()
+
+	// 自动寻找可用端口（8080 → 8081 → ... → 8090，再随机）
+	ln, addr := findFreePort()
 	url := "http://localhost" + addr
 	fmt.Printf("访问 %s 查看文件管理界面\n", url)
 	go openBrowser(url)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	log.Fatal(http.Serve(ln, nil))
+}
+
+// findFreePort 从 8080 开始尝试，找到第一个可用端口。
+func findFreePort() (net.Listener, string) {
+	for port := 8080; port <= 8900; port++ {
+		addr := fmt.Sprintf(":%d", port)
+		ln, err := net.Listen("tcp", addr)
+		if err == nil {
+			return ln, addr
+		}
+	}
+	// 全被占用则让系统随机分配
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		log.Fatal("无法绑定任何端口: ", err)
+	}
+	return ln, ":" + fmt.Sprint(ln.Addr().(*net.TCPAddr).Port)
 }
 
 // noCache 包装 handler，添加禁止缓存的响应头。
@@ -129,18 +165,21 @@ func cacheFilePath() string {
 	if dir == "" {
 		dir, _ = os.Getwd()
 	}
-	return filepath.Join(dir, "size_cache.json")
+	return filepath.Join(dir, "size_cache.bin")
 }
 
 // recentFilePath 返回最近访问文件夹记录的文件路径。
 func recentFilePath() string {
-	return filepath.Join(filepath.Dir(cacheFilePath()), "recent_folders.json")
+	return filepath.Join(filepath.Dir(cacheFilePath()), "recent_folders.bin")
 }
 
 // CacheData 单条缓存数据，文件绝对路径作为 map key。
+// 对于目录，ModTime 存储最新子项的修改时间，FileCount 存储直接子项数，
+// 用于判断目录内容是否变化（目录自身的 mtime 不可靠）。
 type CacheData struct {
-	Size    int64     `json:"size"`
-	ModTime time.Time `json:"modTime"`
+	Size      int64
+	ModTime   time.Time
+	FileCount int
 }
 
 // SizeCache 缓存管理器。
@@ -169,7 +208,7 @@ func NewSizeCache(cachePath string) (*SizeCache, error) {
 	return sc, nil
 }
 
-// Load 从 JSON 文件加载缓存。
+// Load 从 GZIP+Gob 文件加载缓存。
 func (sc *SizeCache) Load() error {
 	f, err := os.Open(sc.CacheFile)
 	if err != nil {
@@ -177,12 +216,18 @@ func (sc *SizeCache) Load() error {
 	}
 	defer f.Close()
 
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	return json.NewDecoder(f).Decode(&sc.Data)
+	return gob.NewDecoder(gz).Decode(&sc.Data)
 }
 
-// Save 全量覆盖保存缓存为 JSON 文件。
+// Save 全量覆盖保存缓存为 GZIP+Gob 文件。
 func (sc *SizeCache) Save() error {
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
@@ -192,7 +237,10 @@ func (sc *SizeCache) Save() error {
 		return fmt.Errorf("创建缓存文件失败: %v", err)
 	}
 	defer f.Close()
-	return json.NewEncoder(f).Encode(sc.Data)
+
+	gz := gzip.NewWriter(f)
+	defer gz.Close()
+	return gob.NewEncoder(gz).Encode(sc.Data)
 }
 
 // Get 读取缓存。
@@ -204,16 +252,17 @@ func (sc *SizeCache) Get(path string) (CacheData, bool) {
 }
 
 // Set 仅更新内存缓存，标记 dirty，不触发磁盘写入。
-func (sc *SizeCache) Set(path string, size int64, modTime time.Time) {
+func (sc *SizeCache) Set(path string, size int64, modTime time.Time, fileCount int) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	// 已存在且大小未变、修改时间未变 → 跳过
-	if old, ok := sc.Data[path]; ok && old.Size == size && old.ModTime.Equal(modTime) {
+	// 已存在且大小未变、修改时间未变、子项数未变 → 跳过
+	if old, ok := sc.Data[path]; ok && old.Size == size && old.ModTime.Equal(modTime) && old.FileCount == fileCount {
 		return
 	}
 	sc.Data[path] = CacheData{
-		Size:    size,
-		ModTime: modTime,
+		Size:      size,
+		ModTime:   modTime,
+		FileCount: fileCount,
 	}
 	sc.dirty = true
 }
@@ -261,7 +310,12 @@ func NewRecentStore(path string) (*RecentStore, error) {
 			return nil, err
 		}
 		defer f.Close()
-		if err := json.NewDecoder(f).Decode(&rs.Folders); err != nil {
+		gz, err := gzip.NewReader(f)
+		if err != nil {
+			return nil, err
+		}
+		defer gz.Close()
+		if err := gob.NewDecoder(gz).Decode(&rs.Folders); err != nil {
 			log.Printf("加载最近访问失败: %v，将创建新记录", err)
 		}
 	}
@@ -309,15 +363,21 @@ func (rs *RecentStore) Save() error {
 		return err
 	}
 	defer f.Close()
-	if err := json.NewEncoder(f).Encode(rs.Folders); err != nil {
+
+	gz := gzip.NewWriter(f)
+	defer gz.Close()
+	if err := gob.NewEncoder(gz).Encode(rs.Folders); err != nil {
 		return err
 	}
 	rs.dirty = false
 	return nil
 }
 
-// cachedFileSize 读取文件大小，若缓存命中且文件未修改则直接返回缓存结果。
+// cachedFileSize 读取文件大小，有缓存直接返回，无缓存则 stat 并缓存。
 func cachedFileSize(path string) (int64, error) {
+	if d, ok := sizeCache.Get(path); ok {
+		return d.Size, nil
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		return 0, err
@@ -325,18 +385,13 @@ func cachedFileSize(path string) (int64, error) {
 	if info.IsDir() {
 		return 0, fmt.Errorf("路径不是文件: %s", path)
 	}
-
-	if d, ok := sizeCache.Get(path); ok && d.ModTime.Equal(info.ModTime()) {
-		return d.Size, nil
-	}
-
 	size := info.Size()
-	sizeCache.Set(path, size, info.ModTime())
+	sizeCache.Set(path, size, info.ModTime(), 0)
 	return size, nil
 }
 
 // handleSize 异步计算单个路径的大小（前端并发请求）。
-// 文件和文件夹大小都缓存，修改时间未变则直接返回缓存值。
+// 有缓存直接返回，无缓存则计算并缓存。
 func handleSize(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	path := r.URL.Query().Get("path")
@@ -350,15 +405,15 @@ func handleSize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info, err := os.Stat(abs)
-	if err != nil {
-		json.NewEncoder(w).Encode(map[string]any{"path": abs, "size": 0, "error": err.Error()})
+	// 有缓存直接返回，不校验修改时间
+	if d, ok := sizeCache.Get(abs); ok {
+		json.NewEncoder(w).Encode(map[string]any{"path": abs, "size": d.Size})
 		return
 	}
 
-	// 文件和文件夹都走缓存：命中且修改时间一致直接返回
-	if d, ok := sizeCache.Get(abs); ok && d.ModTime.Equal(info.ModTime()) {
-		json.NewEncoder(w).Encode(map[string]any{"path": abs, "size": d.Size})
+	info, err := os.Stat(abs)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"path": abs, "size": 0, "error": err.Error()})
 		return
 	}
 
@@ -368,8 +423,7 @@ func handleSize(w http.ResponseWriter, r *http.Request) {
 	} else {
 		size = info.Size()
 	}
-	sizeCache.Set(abs, size, info.ModTime())
-	// 每个请求只保存一次全量缓存
+	sizeCache.Set(abs, size, info.ModTime(), 0)
 	sizeCache.Flush()
 
 	json.NewEncoder(w).Encode(map[string]any{"path": abs, "size": size})
@@ -516,6 +570,49 @@ func handlePickFolder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"path": path})
 }
 
+// handleOpenInExplorer 在系统文件管理器中打开文件/文件夹所在位置并选中。
+func handleOpenInExplorer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	path := r.URL.Query().Get("path")
+	if path == "" {
+		json.NewEncoder(w).Encode(map[string]any{"error": "缺少 path 参数"})
+		return
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+	if _, err := os.Stat(abs); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "路径不存在: " + abs})
+		return
+	}
+
+	var cmd *exec.Cmd
+	if isWindows {
+		cmd = exec.Command("explorer.exe", "/select,"+abs)
+	} else if runtime.GOOS == "darwin" {
+		// macOS: open -R 选中文件
+		cmd = exec.Command("open", "-R", abs)
+	} else {
+		// Linux: 打开父目录
+		dir := filepath.Dir(abs)
+		cmd = exec.Command("xdg-open", dir)
+	}
+	if err := cmd.Start(); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+	cmd.Process.Release()
+	json.NewEncoder(w).Encode(map[string]any{"ok": true})
+}
+
+// handleHeartbeat 前端定期调用，更新心跳时间戳。
+func handleHeartbeat(w http.ResponseWriter, r *http.Request) {
+	lastHeartbeat = time.Now()
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // listRoots 获取系统可用的根路径列表。
 func listRoots() []string {
 	if isWindows {
@@ -621,7 +718,7 @@ func fileExt(name string, isDir bool) string {
 }
 
 // dirSize 使用 filepath.WalkDir 遍历目录，累加所有文件大小。
-// 每个文件通过 os.Stat() 获取大小并缓存，文件夹大小不单独缓存。
+// 每个文件通过 cachedFileSize() 获取大小（优先读缓存），文件夹大小单独缓存。
 func dirSize(path string) int64 {
 	var total int64
 	_ = filepath.WalkDir(path, func(p string, d os.DirEntry, err error) error {

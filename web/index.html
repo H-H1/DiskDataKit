@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiskDataKit — 文件管理</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,9 +19,7 @@
     <header class="app-header">
         <div class="header-inner">
             <a class="brand" href="#" onclick="loadPath('');return false;">
-                <svg class="brand-logo" viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
-                    <path fill="currentColor" d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"></path>
-                </svg>
+                <img class="brand-logo" src="favicon.ico" width="22" height="22" alt="DiskDataKit" aria-hidden="true">
                 <span class="brand-name" data-text="DiskDataKit">DiskDataKit</span>
                 <span class="brand-dot"></span>
             </a>
@@ -55,8 +54,16 @@
                     <div id="chartHint" class="chart-hint hidden"></div>
                 </div>
                 <div class="chart-legend">
-                    <span class="legend-item"><span class="legend-bar"></span>文件大小</span>
-                    <span class="legend-item"><span class="legend-line"></span>累计百分比</span>
+                    <label class="legend-toggle" data-line="self">
+                        <input type="checkbox" id="toggleSelf" checked>
+                        <span class="legend-line legend-line-self"></span>
+                        <span class="legend-text">自身占比</span>
+                    </label>
+                    <label class="legend-toggle" data-line="cumulative">
+                        <input type="checkbox" id="toggleCumulative" checked>
+                        <span class="legend-line"></span>
+                        <span class="legend-text">累计百分比</span>
+                    </label>
                 </div>
                 <div class="card-header-line"></div>
             </div>
@@ -64,7 +71,44 @@
                 <canvas id="paretoCanvas"></canvas>
                 <div id="chartTooltip" class="chart-tooltip hidden"></div>
             </div>
+            <div id="expandSection" class="expand-section hidden">
+                <div class="expand-header">
+                    <span class="expand-title">展开详情 · <span id="expandLabel">其他</span></span>
+                    <div class="expand-actions">
+                        <button id="expandMore" class="btn-expand-more hidden">展开剩余 <span id="remainCount">0</span> 项</button>
+                        <button id="expandClose" class="expand-close" title="关闭展开">×</button>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="expandCanvas"></canvas>
+                    <div id="expandTooltip" class="chart-tooltip hidden"></div>
+                </div>
+            </div>
         </section>
+
+        <!-- 展开项数输入弹框 -->
+        <div id="expandModal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-title">展开"其他"项</div>
+                <p class="modal-desc">输入要展开的条目数量（当前合并的尾部项目）</p>
+                <input type="number" id="expandInput" class="modal-input" min="1" max="500" value="50">
+                <div class="modal-actions">
+                    <button id="expandCancel" class="btn btn-ghost">取消</button>
+                    <button id="expandConfirm" class="btn btn-accent">展开</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右键/左键上下文菜单 -->
+        <div id="ctxMenu" class="ctx-menu hidden">
+            <button id="ctxOpenExplorer" class="ctx-item">
+                <svg class="ctx-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                    <path d="M1.5 3a1 1 0 0 1 1-1h4.379a1 1 0 0 1 .707.293L8.707 3.5H13.5a1 1 0 0 1 1 1V7h-1V4.5H8.5l-1-1H2.5v8H6v1H1.5V3z"/>
+                    <path d="M8 8.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5v-5zM9 9v4h5V9H9z"/>
+                </svg>
+                打开文件夹所在位置
+            </button>
+        </div>
 
         <section class="card glass file-card">
             <div class="card-header">
