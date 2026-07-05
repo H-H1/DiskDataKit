@@ -1,6 +1,7 @@
 package main
 
 import (
+	"DiskDataKit/ai"
 	"compress/gzip"
 	"embed"
 	"encoding/gob"
@@ -23,8 +24,11 @@ import (
 //go:embed web
 var webFS embed.FS
 
-// 心跳：前端定期发送，超时则退出程序
+// 心跳：前端定期发送，超时则退出
 var lastHeartbeat = time.Now()
+
+// DeepSeek AI 客户端（多 Key 池 + 上下文记忆）
+var aiClient *ai.Client
 
 // FileItem 描述单个文件或目录的信息。
 type FileItem struct {
@@ -86,6 +90,12 @@ func main() {
 	http.HandleFunc("/api/pickFolder", handlePickFolder)
 	http.HandleFunc("/api/openInExplorer", handleOpenInExplorer)
 	http.HandleFunc("/api/heartbeat", handleHeartbeat)
+	http.HandleFunc("/api/chat", handleChat)
+	http.HandleFunc("/api/chat/clear", handleChatClear)
+	http.HandleFunc("/api/chat/config", handleChatConfig)
+
+	// 初始化 DeepSeek AI 客户端
+	initAI()
 
 	// 心跳监控：前端关闭后 5 秒无心跳则退出
 	go func() {

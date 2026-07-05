@@ -37,6 +37,10 @@
                     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.011a.25.25 0 0 1 .25.25v3.011a.25.25 0 0 1-.427.177l-1.38-1.38A7 7 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.49 5.49 0 0 0-4.388 2.196l1.204 1.204a.25.25 0 0 1-.177.427H1.628a.25.25 0 0 1-.25-.25V2.066a.25.25 0 0 1 .427-.177l1.38 1.38A7 7 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"></path></svg>
                     <span class="btn-label">刷新</span>
                 </button>
+                <button id="chatToggleHeaderBtn" class="btn btn-ghost" title="AI 助手">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM4.5 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm5 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-1.5 4.5a3 3 0 0 1-2.5-1.34.5.5 0 0 1 .83-.55A2 2 0 0 0 8 10a2 2 0 0 0 1.67-.89.5.5 0 1 1 .83.55 3 3 0 0 1-2.5 1.34Z"/></svg>
+                    <span class="btn-label">AI</span>
+                </button>
             </div>
         </div>
     </header>
@@ -153,6 +157,44 @@
             <span id="footerInfo"></span>
         </footer>
     </main>
+
+    <!-- AI 助手侧边栏（VSCode 风格） -->
+    <aside id="chatSidebar" class="chat-sidebar">
+        <div class="chat-sidebar-header">
+            <div class="chat-sidebar-title">
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="color:#c084fc"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM4.5 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm5 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-1.5 4.5a3 3 0 0 1-2.5-1.34.5.5 0 0 1 .83-.55A2 2 0 0 0 8 10a2 2 0 0 0 1.67-.89.5.5 0 1 1 .83.55 3 3 0 0 1-2.5 1.34Z"/></svg>
+                <span>AI 助手</span>
+                <div id="chatStatus" class="chat-status">DeepSeek</div>
+            </div>
+            <div class="chat-sidebar-actions">
+                <button id="chatNewBtn" class="chat-icon-btn" title="新对话">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM4.5 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm5 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-1.5 4.5a3 3 0 0 1-2.5-1.34.5.5 0 0 1 .83-.55A2 2 0 0 0 8 10a2 2 0 0 0 1.67-.89.5.5 0 1 1 .83.55 3 3 0 0 1-2.5 1.34Z"/></svg>
+                </button>
+                <button id="chatCloseBtn" class="chat-icon-btn" title="关闭面板">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg>
+                </button>
+            </div>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="chat-welcome">
+                <div class="chat-welcome-icon">🤖</div>
+                <p>你好！我是 AI 助手</p>
+                <p class="chat-welcome-hint">基于 DeepSeek 大模型，支持上下文记忆</p>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <div class="chat-input-wrap">
+                <textarea id="chatInput" class="chat-input" placeholder="问点什么... (Enter 发送, Shift+Enter 换行)" rows="1"></textarea>
+                <button id="chatSendBtn" class="chat-send-btn" title="发送">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M.989 8 .064 2.68a1.342 1.342 0 0 1 1.85-1.462l13.402 5.744a1.129 1.129 0 0 1 0 2.076L1.913 14.782a1.343 1.343 0 0 1-1.85-1.463L.99 8Zm.603-5.288L2.38 7.25h4.87a.75.75 0 0 1 0 1.5H2.38l-.788 4.538L13.929 8 1.592 2.712Z"/></svg>
+                </button>
+            </div>
+            <div class="chat-input-hint">
+                <span id="chatModelLabel">deepseek-chat</span>
+            </div>
+        </div>
+    </aside>
     <script src="app.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
