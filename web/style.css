@@ -1218,6 +1218,27 @@ body {
     color: var(--fg-bright);
 }
 
+.chat-provider-select {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--fg-default);
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.15s var(--ease);
+}
+
+.chat-provider-select:hover {
+    border-color: var(--border-strong);
+}
+
+.chat-provider-select:focus {
+    border-color: var(--accent);
+}
+
 /* 消息区 */
 .chat-messages {
     flex: 1;
@@ -1446,16 +1467,11 @@ body {
 }
 
 .chat-input-hint {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 4px 0;
-    font-size: 11px;
-    color: var(--fg-subtle);
+    padding: 4px 0 0;
 }
 
-#chatModelLabel {
-    font-family: var(--font-mono);
+.chat-input-hint .chat-provider-select {
+    width: 100%;
 }
 
 /* 侧边栏打开时主内容右移 */

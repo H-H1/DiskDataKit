@@ -7,6 +7,7 @@ const chatStatus = document.getElementById('chatStatus');
 const chatToggleHeaderBtn = document.getElementById('chatToggleHeaderBtn');
 const chatCloseBtn = document.getElementById('chatCloseBtn');
 const chatNewBtn = document.getElementById('chatNewBtn');
+const chatProviderSelect = document.getElementById('chatProviderSelect');
 
 let chatSessionID = 'session-' + Date.now();
 let chatSending = false;
@@ -26,19 +27,41 @@ function toggleChat(open) {
 chatToggleHeaderBtn.addEventListener('click', () => toggleChat());
 chatCloseBtn.addEventListener('click', () => toggleChat(false));
 
-// 初始化：检查 AI 配置状态
+// 初始化：加载厂商列表 + 检查配置状态
 async function initChat() {
     try {
         const resp = await fetch('/api/chat/config');
         const data = await resp.json();
+
         if (!data.configured) {
             chatStatus.textContent = '未配置';
             chatStatus.classList.add('not-configured');
+            return;
         }
+
+        // 填充厂商下拉框
+        chatProviderSelect.innerHTML = '';
+        if (data.providers) {
+            for (const p of data.providers) {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = p.name;
+                if (p.name === data.currentProvider) opt.selected = true;
+                chatProviderSelect.appendChild(opt);
+            }
+        }
+
+        // 更新状态
+        chatStatus.textContent = data.currentProvider || '已配置';
     } catch (e) {
         // 忽略
     }
 }
+
+// 切换模型时更新状态显示
+chatProviderSelect.addEventListener('change', () => {
+    chatStatus.textContent = chatProviderSelect.value;
+});
 
 // 发送消息
 async function sendChatMessage() {
@@ -74,7 +97,7 @@ async function sendChatMessage() {
             body: JSON.stringify({
                 message: text,
                 sessionID: chatSessionID,
-                model: ''
+                model: chatProviderSelect.value || ''
             })
         });
 

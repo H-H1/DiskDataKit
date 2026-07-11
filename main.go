@@ -27,8 +27,10 @@ var webFS embed.FS
 // 心跳：前端定期发送，超时则退出
 var lastHeartbeat = time.Now()
 
-// DeepSeek AI 客户端（多 Key 池 + 上下文记忆）
-var aiClient *ai.Client
+// AI 客户端池：支持多个厂商，按名称切换
+var aiClients map[string]*ai.Client
+var aiCurrentProvider string
+var aiConfig *AIConfig
 
 // FileItem 描述单个文件或目录的信息。
 type FileItem struct {
@@ -55,6 +57,9 @@ var (
 	isWindows = goos == "windows"
 	isDarwin  = goos == "darwin"
 	isLinux   = goos == "linux"
+	isIOS     = goos == "ios"
+	isAndroid = goos == "android"
+	isMobile  = isIOS || isAndroid
 )
 
 // 文件大小缓存管理器，启动时加载，运行时更新。
@@ -98,14 +103,14 @@ func main() {
 	initAI()
 
 	// 心跳监控：前端关闭后 5 秒无心跳则退出
-	go func() {
-		for range time.Tick(5 * time.Second) {
-			if time.Since(lastHeartbeat) > 20*time.Second {
-				fmt.Println("浏览器已关闭，程序自动退出。")
-				os.Exit(0)
-			}
-		}
-	}()
+	// go func() {
+	// 	for range time.Tick(5 * time.Second) {
+	// 		if time.Since(lastHeartbeat) > 20*time.Second {
+	// 			fmt.Println("浏览器已关闭，程序自动退出。")
+	// 			os.Exit(0)
+	// 		}
+	// 	}
+	// }()
 
 	// 自动寻找可用端口（8080 → 8081 → ... → 8090，再随机）
 	ln, addr := findFreePort()
@@ -144,6 +149,10 @@ func noCache(h http.Handler) http.Handler {
 
 // openBrowser 调用系统默认浏览器打开指定地址。
 func openBrowser(url string) {
+	if isMobile {
+		// iOS/Android 无法通过命令行打开浏览器，用户需手动访问
+		return
+	}
 	var cmd *exec.Cmd
 	switch {
 	case isWindows:
@@ -161,10 +170,20 @@ func cacheFilePath() string {
 	var dir string
 	switch {
 	case isWindows:
-		// Windows: 使用 LocalAppData 目录
 		dir = filepath.Join(os.Getenv("LOCALAPPDATA"), "DiskDataKit")
 	case isDarwin:
 		dir = filepath.Join(os.Getenv("HOME"), "Library", "Caches", "DiskDataKit")
+	case isIOS:
+		// iOS: App 沙盒 Documents 目录
+		dir = filepath.Join(os.Getenv("HOME"), "Documents", "DiskDataKit")
+	case isAndroid:
+		// Android: 优先外部存储，回退内部
+		dir = os.Getenv("ANDROID_DATA")
+		if dir == "" {
+			dir = filepath.Join(os.Getenv("HOME"), "DiskDataKit")
+		} else {
+			dir = filepath.Join(dir, "DiskDataKit")
+		}
 	default:
 		dir = os.Getenv("XDG_CACHE_HOME")
 		if dir == "" {
@@ -599,12 +618,17 @@ func handleOpenInExplorer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var cmd *exec.Cmd
-	if isWindows {
+	switch {
+	case isWindows:
 		cmd = exec.Command("explorer.exe", "/select,"+abs)
-	} else if runtime.GOOS == "darwin" {
+	case isDarwin:
 		// macOS: open -R 选中文件
 		cmd = exec.Command("open", "-R", abs)
-	} else {
+	case isMobile:
+		// iOS/Android: 不支持文件管理器命令
+		json.NewEncoder(w).Encode(map[string]any{"error": "当前系统不支持打开文件管理器"})
+		return
+	default:
 		// Linux: 打开父目录
 		dir := filepath.Dir(abs)
 		cmd = exec.Command("xdg-open", dir)
@@ -625,7 +649,8 @@ func handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 
 // listRoots 获取系统可用的根路径列表。
 func listRoots() []string {
-	if isWindows {
+	switch {
+	case isWindows:
 		var roots []string
 		for c := 'A'; c <= 'Z'; c++ {
 			drive := string(c) + `:\`
@@ -634,12 +659,37 @@ func listRoots() []string {
 			}
 		}
 		return roots
+	case isIOS:
+		// iOS: 沙盒根目录 + Documents
+		home := os.Getenv("HOME")
+		var roots []string
+		if home != "" {
+			roots = append(roots, home)
+			docDir := filepath.Join(home, "Documents")
+			if _, err := os.Stat(docDir); err == nil {
+				roots = append(roots, docDir)
+			}
+		}
+		return roots
+	case isAndroid:
+		// Android: 常见存储路径
+		var roots []string
+		for _, p := range []string{"/sdcard", "/storage/emulated/0", "/storage"} {
+			if _, err := os.Stat(p); err == nil {
+				roots = append(roots, p)
+			}
+		}
+		if len(roots) == 0 {
+			roots = []string{"/"}
+		}
+		return roots
+	default:
+		// Unix-like 系统使用根目录
+		if _, err := os.Stat("/"); err == nil {
+			return []string{"/"}
+		}
+		return nil
 	}
-	// Unix-like 系统使用根目录
-	if _, err := os.Stat("/"); err == nil {
-		return []string{"/"}
-	}
-	return nil
 }
 
 // pickFolder 调用系统原生对话框让用户选择文件夹，返回所选路径（取消则返回空字符串）。
@@ -649,6 +699,9 @@ func pickFolder() (string, error) {
 		return pickFolderWindows()
 	case isDarwin:
 		return pickFolderDarwin()
+	case isMobile:
+		// iOS/Android 无命令行文件夹选择器
+		return "", fmt.Errorf("当前系统不支持文件夹选择器，请手动输入路径")
 	default:
 		return pickFolderLinux()
 	}

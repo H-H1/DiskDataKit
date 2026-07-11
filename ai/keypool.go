@@ -9,7 +9,7 @@ import (
 type KeyPool struct {
 	mu      sync.Mutex
 	keys    []*KeyInfo
-	current int          // 轮询位置
+	current int               // 轮询位置
 	cooling map[int]time.Time // 冷却中的 key: index → 恢复时间
 }
 
@@ -67,19 +67,19 @@ func (p *KeyPool) Get() (string, *KeyInfo) {
 
 // MarkFailed 标记 Key 失败，连续失败 3 次进入冷却。
 func (p *KeyPool) MarkFailed(key string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	// p.mu.Lock()
+	// defer p.mu.Unlock()
 
-	for i, info := range p.keys {
-		if info != nil && info.Key == key {
-			info.FailCount++
-			if info.FailCount >= 3 {
-				info.Healthy = false
-				p.cooling[i] = time.Now().Add(60 * time.Second) // 冷却 60 秒
-			}
-			return
-		}
-	}
+	// for i, info := range p.keys {
+	// 	if info != nil && info.Key == key {
+	// 		info.FailCount++
+	// 		if info.FailCount >= 3 {
+	// 			info.Healthy = false
+	// 			p.cooling[i] = time.Now().Add(60 * time.Second) // 冷却 60 秒
+	// 		}
+	// 		return
+	// 	}
+	// }
 }
 
 // MarkSuccess 标记 Key 成功，重置失败计数。

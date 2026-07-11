@@ -345,6 +345,12 @@ function renderList(items) {
             tr.onclick = () => loadPath(item.path);
         }
 
+        // 右键打开上下文菜单
+        tr.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            showCtxMenu(e.clientX, e.clientY, item.path);
+        });
+
         fileList.appendChild(tr);
     });
 
@@ -616,6 +622,19 @@ function drawPareto(progress) {
         if (animH > 3 && i < 8) {
             chartCtx.fillStyle = `rgba(255, 255, 255, ${fadeFactor * 0.3})`;
             chartCtx.fillRect(x, y, barW, 1.5);
+        }
+
+        // 自身占比标注（柱子上方）
+        if (localP > 0.5 && selfPct >= 0.1 && barW >= 12) {
+            const label = selfPct.toFixed(selfPct < 1 ? 1 : 0) + '%';
+            chartCtx.save();
+            const fontSize = barW >= 30 ? 10 : barW >= 18 ? 9 : 8;
+            chartCtx.font = `600 ${fontSize}px "Segoe UI", system-ui, sans-serif`;
+            chartCtx.textAlign = 'center';
+            chartCtx.textBaseline = 'bottom';
+            chartCtx.fillStyle = `rgba(78, 224, 208, ${fadeFactor})`;
+            chartCtx.fillText(label, x + barW / 2, y - 2);
+            chartCtx.restore();
         }
 
         chartBarRects.push({ x, y: mt + ch - barH, w: barW, h: barH, idx: i });
@@ -1083,6 +1102,19 @@ function drawExpanded(progress) {
         if (animH > 3 && i < 8) {
             expandCtx.fillStyle = `rgba(255, 255, 255, ${fadeFactor * 0.3})`;
             expandCtx.fillRect(x, y, barW, 1.5);
+        }
+
+        // 自身占比标注（柱子上方）
+        if (localP > 0.5 && selfPct >= 0.1 && barW >= 12) {
+            const label = selfPct.toFixed(selfPct < 1 ? 1 : 0) + '%';
+            expandCtx.save();
+            const fontSize = barW >= 30 ? 10 : barW >= 18 ? 9 : 8;
+            expandCtx.font = `600 ${fontSize}px "Segoe UI", system-ui, sans-serif`;
+            expandCtx.textAlign = 'center';
+            expandCtx.textBaseline = 'bottom';
+            expandCtx.fillStyle = `rgba(192, 132, 252, ${fadeFactor})`;
+            expandCtx.fillText(label, x + barW / 2, y - 2);
+            expandCtx.restore();
         }
 
         expandBarRects.push({ x, y: mt + ch - barH, w: barW, h: barH, idx: i });
