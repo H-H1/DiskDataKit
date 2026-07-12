@@ -3,4 +3,5 @@
 *.exe~
 ai_config.json
 test
+DiskDataKit
 *.exe*

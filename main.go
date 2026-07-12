@@ -78,6 +78,11 @@ var sizeCache *SizeCache
 var recentFolders *RecentStore
 
 func main() {
+	// 非管理员/root 则自动提权重启（Windows UAC / macOS osascript / Linux pkexec）
+	// if !isAdmin() {
+	// 	elevate()
+	// 	return
+	// }
 	fmt.Printf("DiskDataKit 已启动 | 系统: %s\n", goos)
 	var err error
 	sizeCache, err = NewSizeCache(cacheFilePath())
@@ -109,6 +114,9 @@ func main() {
 	http.HandleFunc("/api/chat/config", handleChatConfig)
 	http.HandleFunc("/api/cleanup/scan", handleCleanupScan)
 	http.HandleFunc("/api/cleanup/delete", handleCleanupDelete)
+	http.HandleFunc("/api/startup/list", handleStartupList)
+	http.HandleFunc("/api/startup/toggle", handleStartupToggle)
+	http.HandleFunc("/api/scan/list", handleScanList)
 
 	// 初始化 DeepSeek AI 客户端
 	initAI()

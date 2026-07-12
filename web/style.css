@@ -1876,6 +1876,241 @@ body {
     margin-top: 2px;
 }
 
+/* ==================== 启动项管理 ==================== */
+.startup-list {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.startup-group {
+    margin-bottom: 18px;
+}
+
+.startup-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.startup-group-count {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    background: var(--surface);
+    padding: 1px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.startup-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s var(--ease);
+}
+
+.startup-item:hover {
+    border-color: rgba(78, 224, 208, 0.25);
+    background: rgba(78, 224, 208, 0.04);
+}
+
+.startup-item-disabled {
+    opacity: 0.55;
+}
+
+.startup-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.startup-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 2px;
+    word-break: break-all;
+}
+
+.startup-item-orig {
+    font-size: 10.5px;
+    color: var(--fg-subtle);
+    font-family: var(--font-mono);
+    margin-bottom: 2px;
+    word-break: break-all;
+}
+
+.startup-item-path {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--fg-muted);
+    word-break: break-all;
+    margin-bottom: 2px;
+}
+
+.startup-item-loc {
+    font-size: 10.5px;
+    color: var(--fg-subtle);
+    word-break: break-all;
+}
+
+.startup-toggle {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s var(--ease);
+}
+
+.startup-toggle:disabled {
+    cursor: wait;
+    opacity: 0.6;
+}
+
+.startup-toggle-enable {
+    color: var(--accent);
+    border-color: rgba(78, 224, 208, 0.3);
+    background: rgba(78, 224, 208, 0.08);
+}
+
+.startup-toggle-enable:hover:not(:disabled) {
+    background: rgba(78, 224, 208, 0.16);
+    border-color: rgba(78, 224, 208, 0.5);
+}
+
+.startup-toggle-disable {
+    color: var(--danger);
+    border-color: rgba(255, 107, 107, 0.3);
+    background: rgba(255, 107, 107, 0.06);
+}
+
+.startup-toggle-disable:hover:not(:disabled) {
+    background: rgba(255, 107, 107, 0.14);
+    border-color: rgba(255, 107, 107, 0.5);
+}
+
+/* ==================== 流氓软件检测 ==================== */
+.scan-list {
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.scan-summary {
+    font-size: 12.5px;
+    color: var(--fg-muted);
+    margin-bottom: 14px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.scan-sus-count {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.scan-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 3px solid transparent;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s var(--ease);
+    cursor: context-menu;
+}
+
+.scan-item:hover {
+    border-color: rgba(78, 224, 208, 0.25);
+    background: rgba(78, 224, 208, 0.04);
+}
+
+.scan-item.scan-verdict-suspicious {
+    border-left-color: var(--danger);
+    background: rgba(255, 107, 107, 0.05);
+}
+
+.scan-item.scan-verdict-safe {
+    border-left-color: rgba(78, 224, 208, 0.4);
+}
+
+.scan-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.scan-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 2px;
+    word-break: break-all;
+}
+
+.scan-item-orig {
+    font-size: 10.5px;
+    color: var(--fg-subtle);
+    font-family: var(--font-mono);
+    font-weight: 400;
+}
+
+.scan-item-pub {
+    font-size: 11px;
+    color: var(--fg-muted);
+    margin-top: 2px;
+}
+
+.scan-item-reason {
+    font-size: 11px;
+    color: var(--fg-subtle);
+    margin-top: 3px;
+    line-height: 1.4;
+}
+
+.scan-verdict-badge {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+}
+
+.scan-verdict-badge.scan-verdict-safe {
+    color: var(--accent);
+    border-color: rgba(78, 224, 208, 0.3);
+    background: rgba(78, 224, 208, 0.08);
+}
+
+.scan-verdict-badge.scan-verdict-suspicious {
+    color: var(--danger);
+    border-color: rgba(255, 107, 107, 0.4);
+    background: rgba(255, 107, 107, 0.12);
+}
+
+.scan-verdict-badge.scan-verdict-unknown {
+    color: var(--fg-muted);
+    border-color: var(--border);
+    background: var(--surface);
+}
+
 .cleanup-actions {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 12px;
