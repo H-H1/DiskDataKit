@@ -8,6 +8,12 @@ const footerInfo = document.getElementById('footerInfo');
 const driveSelect = document.getElementById('driveSelect');
 const countBadge = document.getElementById('countBadge');
 const totalSizeBadge = document.getElementById('totalSizeBadge');
+const fileCard = document.getElementById('fileCard');
+const breadcrumbCard = document.getElementById('breadcrumbCard');
+const homeView = document.getElementById('homeView');
+const homeDrives = document.getElementById('homeDrives');
+const homeRecent = document.getElementById('homeRecent');
+const homeBtn = document.getElementById('homeBtn');
 
 // 帕累托图元素
 const chartCard = document.getElementById('chartCard');
@@ -24,6 +30,7 @@ const expandModal = document.getElementById('expandModal');
 const expandInput = document.getElementById('expandInput');
 const expandMoreBtn = document.getElementById('expandMore');
 const remainCountEl = document.getElementById('remainCount');
+const expandHint = document.getElementById('expandHint');
 const ctxMenu = document.getElementById('ctxMenu');
 const ctxOpenExplorer = document.getElementById('ctxOpenExplorer');
 let ctxTargetPath = '';   // 当前右键菜单对应的文件路径
@@ -31,6 +38,7 @@ let ctxTargetPath = '';   // 当前右键菜单对应的文件路径
 let currentPath = '';
 let loadToken = 0;
 let recentFolders = [];
+let drivesData = [];
 
 // 帕累托图状态
 let chartItems = [];          // [{name, size, isDir, path, computed}]
@@ -58,14 +66,14 @@ let modalDefaultCount = 50;   // 弹框默认值
 let totalSize = 0;
 let dirComputingCount = 0;
 
-// 心跳：定期通知后端前端仍在线，关闭浏览器后后端自动退出
-setInterval(() => {
-    fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
-}, 10000);
-// 页面卸载时立即发一次，刷新时避免后端误退
-window.addEventListener('beforeunload', () => {
-    navigator.sendBeacon('/api/heartbeat');
-});
+// WebSocket 长连接：浏览器关闭后连接断开，后端宽限 3 秒后自动退出
+// 连接断开（网络波动/休眠恢复）时自动重连，刷新页面宽限期内重连不会误退
+(function connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws`);
+    ws.onclose = () => setTimeout(connectWS, 1000);
+    ws.onerror = () => ws.close();
+})();
 
 // 根据扩展名映射文件图标
 const ICONS = {
@@ -153,8 +161,58 @@ function hasComputingTasks() {
     return count;
 }
 
+// 视图切换：首页 / 文件视图
+function showHome() {
+    homeView.classList.remove('hidden');
+    fileCard.classList.add('hidden');
+    breadcrumbCard.classList.add('hidden');
+    chartCard.classList.add('hidden');
+    homeBtn.classList.add('hidden');
+    if (chartAnimId) { cancelAnimationFrame(chartAnimId); chartAnimId = null; }
+    footerInfo.textContent = '';
+    renderHomeLists();
+}
+
+function showFileView() {
+    homeView.classList.add('hidden');
+    fileCard.classList.remove('hidden');
+    breadcrumbCard.classList.remove('hidden');
+    homeBtn.classList.remove('hidden');
+}
+
+// 渲染首页磁盘与最近访问列表
+function renderHomeLists() {
+    // 磁盘
+    homeDrives.innerHTML = '';
+    if (drivesData.length === 0) {
+        homeDrives.innerHTML = '<div class="home-list-empty">未检测到可用磁盘</div>';
+    } else {
+        drivesData.forEach(d => {
+            const item = document.createElement('button');
+            item.className = 'home-list-item';
+            item.innerHTML = `<span class="home-list-icon">💽</span><span class="home-list-text">${d}</span>`;
+            item.onclick = () => { addRecent(d); loadPath(d); };
+            homeDrives.appendChild(item);
+        });
+    }
+    // 最近访问
+    homeRecent.innerHTML = '';
+    if (recentFolders.length === 0) {
+        homeRecent.innerHTML = '<div class="home-list-empty">暂无最近访问记录</div>';
+    } else {
+        recentFolders.forEach(f => {
+            const item = document.createElement('button');
+            item.className = 'home-list-item';
+            item.innerHTML = `<span class="home-list-icon">🕘</span><span class="home-list-text" title="${f}">${f}</span>`;
+            item.onclick = () => { loadPath(f); };
+            homeRecent.appendChild(item);
+        });
+    }
+}
+
 // 加载指定路径的文件列表
 async function loadPath(path) {
+    showFileView();
     // 有正在计算中的文件夹大小任务时，提示用户确认是否跳转
     const pending = hasComputingTasks();
     if (pending > 0) {
@@ -186,6 +244,7 @@ async function loadPath(path) {
     expandHoverIdx = -1;
     expandTooltip.classList.add('hidden');
     expandMoreBtn.classList.add('hidden');
+    expandHint.classList.add('hidden');
 
     try {
         const url = '/api/files' + (path ? '?path=' + encodeURIComponent(path) : '');
@@ -444,6 +503,10 @@ function updateChart() {
     // 有新数据时隐藏展开区
     if (chartTailItems.length === 0) {
         expandSection.classList.add('hidden');
+        expandHint.classList.add('hidden');
+    } else {
+        expandHint.textContent = `点击展开"其他" ${chartTailItems.length} 项`;
+        expandHint.classList.remove('hidden');
     }
 
     // 是否仍有未计算的条目
@@ -890,6 +953,7 @@ document.getElementById('expandClose').addEventListener('click', () => {
     expandBarRects = [];
     expandHoverIdx = -1;
     expandTooltip.classList.add('hidden');
+    if (chartTailItems.length > 0) expandHint.classList.remove('hidden');
 });
 
 // "展开剩余"按钮 → 重新打开弹框，默认值加上当前已展开的数量
@@ -900,6 +964,13 @@ expandMoreBtn.addEventListener('click', () => {
     expandModal.classList.remove('hidden');
     expandInput.focus();
     expandInput.select();
+});
+
+// 提示文字点击 -> 直接展开尾部"其他"项
+expandHint.addEventListener('click', () => {
+    if (chartTailItems.length === 0) return;
+    showExpanded(Math.min(50, chartTailItems.length));
+    expandHint.classList.add('hidden');
 });
 
 // 展开图鼠标悬停 → 显示 Tooltip
@@ -1197,6 +1268,7 @@ async function loadDrives() {
             fetch('/api/recent')
         ]);
         const drives = await drivesRes.json();
+        drivesData = drives || [];
         const recentData = await recentRes.json();
         recentFolders = recentData.folders || [];
 
@@ -1241,6 +1313,7 @@ async function loadDrives() {
             addRecent(path);
             loadPath(path);
         };
+        renderHomeLists();
     } catch (err) {
         // 静默忽略
     }
@@ -1285,6 +1358,9 @@ async function pickFolder() {
 // 绑定按钮事件
 document.getElementById('refreshBtn').onclick = () => loadPath(currentPath);
 document.getElementById('pickBtn').onclick = () => pickFolder();
+document.getElementById('homePickBtn').onclick = () => pickFolder();
+document.getElementById('homeCleanupBtn').onclick = () => document.getElementById('cleanupBtn').click();
+homeBtn.onclick = () => showHome();
 document.getElementById('upBtn').onclick = () => {
     if (!currentPath) return;
     const sep = currentPath.includes('\\') ? '\\' : '/';
@@ -1302,11 +1378,7 @@ document.getElementById('upBtn').onclick = () => {
     loadPath(parent);
 };
 
-// 初始化：加载磁盘与最近访问，优先打开上次访问的文件夹
+// 初始化：加载磁盘与最近访问，显示首页
 loadDrives().then(() => {
-    if (recentFolders.length > 0) {
-        loadPath(recentFolders[0]);
-    } else {
-        loadPath('');
-    }
+    showHome();
 });

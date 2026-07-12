@@ -19,13 +19,22 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 //go:embed web
 var webFS embed.FS
 
-// 心跳：前端定期发送，超时则退出
-var lastHeartbeat = time.Now()
+// WebSocket 连接管理：浏览器关闭后连接断开，宽限期后退出
+var (
+	wsMu    sync.Mutex
+	wsCount int
+)
+
+var wsUpgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 // AI 客户端池：支持多个厂商，按名称切换
 var aiClients map[string]*ai.Client
@@ -94,25 +103,17 @@ func main() {
 	http.HandleFunc("/api/recent", handleRecent)
 	http.HandleFunc("/api/pickFolder", handlePickFolder)
 	http.HandleFunc("/api/openInExplorer", handleOpenInExplorer)
-	http.HandleFunc("/api/heartbeat", handleHeartbeat)
+	http.HandleFunc("/ws", handleWS)
 	http.HandleFunc("/api/chat", handleChat)
 	http.HandleFunc("/api/chat/clear", handleChatClear)
 	http.HandleFunc("/api/chat/config", handleChatConfig)
+	http.HandleFunc("/api/cleanup/scan", handleCleanupScan)
+	http.HandleFunc("/api/cleanup/delete", handleCleanupDelete)
 
 	// 初始化 DeepSeek AI 客户端
 	initAI()
 
-	// 心跳监控：前端关闭后 5 秒无心跳则退出
-	// go func() {
-	// 	for range time.Tick(5 * time.Second) {
-	// 		if time.Since(lastHeartbeat) > 20*time.Second {
-	// 			fmt.Println("浏览器已关闭，程序自动退出。")
-	// 			os.Exit(0)
-	// 		}
-	// 	}
-	// }()
-
-	// 自动寻找可用端口（8080 → 8081 → ... → 8090，再随机）
+	// 自动寻找可用端口（8080 -> 8081 -> ... -> 8090，再随机）
 	ln, addr := findFreePort()
 	url := "http://localhost" + addr
 	fmt.Printf("访问 %s 查看文件管理界面\n", url)
@@ -641,10 +642,46 @@ func handleOpenInExplorer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"ok": true})
 }
 
-// handleHeartbeat 前端定期调用，更新心跳时间戳。
-func handleHeartbeat(w http.ResponseWriter, r *http.Request) {
-	lastHeartbeat = time.Now()
-	w.WriteHeader(http.StatusNoContent)
+// handleWS 升级为 WebSocket 长连接。浏览器关闭或刷新时连接断开，
+// 最后一个连接断开后宽限 3 秒退出（刷新时新连接会在宽限期内重建）。
+func handleWS(w http.ResponseWriter, r *http.Request) {
+	c, err := wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	wsMu.Lock()
+	wsCount++
+	wsMu.Unlock()
+
+	defer func() {
+		c.Close()
+		wsMu.Lock()
+		wsCount--
+		n := wsCount
+		wsMu.Unlock()
+		if n <= 0 {
+			go scheduleExit()
+		}
+	}()
+
+	// 阻塞读取，连接断开时 ReadMessage 返回错误退出
+	for {
+		if _, _, err := c.ReadMessage(); err != nil {
+			return
+		}
+	}
+}
+
+// scheduleExit 所有连接断开后宽限 3 秒退出，期间有新连接则不退出。
+func scheduleExit() {
+	time.Sleep(3 * time.Second)
+	wsMu.Lock()
+	n := wsCount
+	wsMu.Unlock()
+	if n <= 0 {
+		fmt.Println("浏览器已关闭，程序自动退出。")
+		os.Exit(0)
+	}
 }
 
 // listRoots 获取系统可用的根路径列表。
@@ -725,6 +762,7 @@ if ($dialog.ShowDialog($form) -eq 'OK') {
 }
 $form.Close()`
 	cmd := exec.Command("powershell", "-NoProfile", "-STA", "-WindowStyle", "Hidden", "-Command", psScript)
+	setNoWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("无法打开文件夹选择器: %v", err)

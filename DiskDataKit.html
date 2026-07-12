@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiskDataKit - 磁盘数据管理工具</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2315181f'/%3E%3Cstop offset='1' stop-color='%230b0d12'/%3E%3C/linearGradient%3E%3ClinearGradient id='ring' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235beed8'/%3E%3Cstop offset='1' stop-color='%232bb8a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='56' height='56' rx='14' fill='url(%23bg)'/%3E%3Ccircle cx='28' cy='28' r='17' fill='none' stroke='url(%23ring)' stroke-width='2' opacity='0.85'/%3E%3Ccircle cx='28' cy='28' r='13' fill='none' stroke='%234ee0d0' stroke-width='0.6' opacity='0.25'/%3E%3Crect x='19' y='31' width='3.2' height='6' rx='1' fill='%23ffa550'/%3E%3Crect x='24' y='28' width='3.2' height='9' rx='1' fill='%23ffd08a'/%3E%3Crect x='29' y='25' width='3.2' height='12' rx='1' fill='%234ee0d0'/%3E%3Crect x='34' y='29' width='3.2' height='8' rx='1' fill='%23c084fc'/%3E%3C/svg%3E">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0c0e13;--bg-card:rgba(255,255,255,.03);--border:rgba(255,255,255,.08);--fg:#e0e0e0;--fg-muted:#888;--accent:#4ee0d0;--accent2:#ffa550;--accent3:#c084fc;--danger:#ff7070}
+body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;line-height:1.6;overflow-x:hidden}
+body::before{content:'';position:fixed;top:-200px;left:-100px;width:600px;height:600px;background:radial-gradient(circle,rgba(78,224,208,.08),transparent 70%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;bottom:-200px;right:-100px;width:600px;height:600px;background:radial-gradient(circle,rgba(192,132,252,.06),transparent 70%);pointer-events:none;z-index:0}
+.container{max-width:960px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+header{text-align:center;padding:80px 24px 40px}
+.logo{display:inline-flex;align-items:center;gap:12px;margin-bottom:24px}
+.logo-icon{width:56px;height:56px;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(78,224,208,.15)}
+.logo-icon svg{width:100%;height:100%;display:block}
+.logo-text{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(78,224,208,.4)}50%{opacity:.6;box-shadow:0 0 0 8px rgba(78,224,208,0)}}
+.tagline{font-size:18px;color:var(--fg-muted);max-width:600px;margin:0 auto 8px}
+.subtitle{font-size:14px;color:var(--fg-muted);opacity:.6}
+.badges{display:flex;justify-content:center;gap:8px;margin-top:24px;flex-wrap:wrap}
+.badge{padding:4px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg-muted)}
+.badge.accent{border-color:rgba(78,224,208,.25);color:var(--accent)}
+.badge.warn{border-color:rgba(255,165,80,.25);color:var(--accent2)}
+.badge.purple{border-color:rgba(192,132,252,.25);color:var(--accent3)}
+section{padding:40px 0}
+.section-title{font-size:20px;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';width:4px;height:20px;border-radius:2px;background:var(--accent)}
+.features{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.feature{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;transition:all .25s}
+.feature:hover{border-color:rgba(78,224,208,.2);background:rgba(78,224,208,.03);transform:translateY(-2px)}
+.feature-icon{font-size:28px;margin-bottom:12px}
+.feature h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.feature p{font-size:13px;color:var(--fg-muted);line-height:1.5}
+.feature-tag{display:inline-block;margin-top:10px;padding:2px 8px;border-radius:6px;font-size:11px}
+.tag-teal{background:rgba(78,224,208,.1);color:var(--accent)}
+.tag-orange{background:rgba(255,165,80,.1);color:var(--accent2)}
+.tag-purple{background:rgba(192,132,252,.1);color:var(--accent3)}
+.tag-red{background:rgba(255,112,112,.1);color:var(--danger)}
+.platforms{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.platform{text-align:center}
+.platform-icon{font-size:40px;margin-bottom:8px}
+.platform-name{font-size:13px;color:var(--fg-muted)}
+.arch-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.arch-item{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.arch-item h4{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--accent)}
+.arch-item p{font-size:12px;color:var(--fg-muted)}
+.arch-item code{font-family:ui-monospace,"Cascadia Code",monospace;font-size:11px;color:var(--accent2);background:rgba(255,165,80,.06);padding:1px 5px;border-radius:4px}
+.cleanup-table{width:100%;border-collapse:collapse;font-size:13px}
+.cleanup-table th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--fg-muted);font-weight:600;font-size:12px}
+.cleanup-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.cleanup-table tr:hover td{background:rgba(78,224,208,.02)}
+.cleanup-table code{font-family:ui-monospace,monospace;font-size:11px;color:var(--accent2)}
+.ai-models{display:flex;flex-wrap:wrap;gap:8px}
+.ai-model{padding:6px 14px;border-radius:8px;font-size:12px;background:var(--bg-card);border:1px solid var(--border);transition:all .2s}
+.ai-model:hover{border-color:rgba(192,132,252,.3);color:var(--accent3)}
+.cli-block{background:#0a0c11;border:1px solid var(--border);border-radius:12px;padding:20px;font-family:ui-monospace,"Cascadia Code",monospace;font-size:13px;overflow-x:auto}
+.cli-block .cmd{color:var(--accent)}
+.cli-block .comment{color:var(--fg-muted);opacity:.6}
+.cli-block .flag{color:var(--accent2)}
+.footer{text-align:center;padding:48px 24px;border-top:1px solid var(--border);margin-top:40px}
+.footer p{font-size:13px;color:var(--fg-muted);margin-bottom:4px}
+.footer .version{font-size:12px;color:var(--fg-muted);opacity:.5}
+.stats{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;margin-top:32px}
+.stat{text-align:center}
+.stat-num{font-size:32px;font-weight:800;color:var(--accent);font-family:ui-monospace,monospace}
+.stat-label{font-size:12px;color:var(--fg-muted);margin-top:4px}
+@media(max-width:640px){.features{grid-template-columns:1fr}.platforms{gap:20px}.stats{gap:24px}}
+.highlights{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.highlight{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;border-radius:14px;background:var(--bg-card);border:1px solid var(--border);transition:all .25s}
+.highlight:hover{border-color:rgba(78,224,208,.2);background:rgba(78,224,208,.03);transform:translateY(-2px)}
+.hl-icon{font-size:24px;flex-shrink:0;line-height:1.4}
+.hl-body h4{font-size:14px;font-weight:600;margin-bottom:4px}
+.hl-body p{font-size:12.5px;color:var(--fg-muted);line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<header>
+    <div class="logo">
+        <div class="logo-icon" aria-label="DiskDataKit">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56"><defs><linearGradient id="lg-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15181f"/><stop offset="1" stop-color="#0b0d12"/></linearGradient><linearGradient id="lg-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5beed8"/><stop offset="1" stop-color="#2bb8a8"/></linearGradient></defs><rect width="56" height="56" rx="14" fill="url(#lg-bg)"/><circle cx="28" cy="28" r="17" fill="none" stroke="url(#lg-ring)" stroke-width="2" opacity="0.85"/><circle cx="28" cy="28" r="13" fill="none" stroke="#4ee0d0" stroke-width="0.6" opacity="0.25"/><rect x="19" y="31" width="3.2" height="6" rx="1" fill="#ffa550"/><rect x="24" y="28" width="3.2" height="9" rx="1" fill="#ffd08a"/><rect x="29" y="25" width="3.2" height="12" rx="1" fill="#4ee0d0"/><rect x="34" y="29" width="3.2" height="8" rx="1" fill="#c084fc"/></svg>
+        </div>
+        <span class="logo-text">DiskDataKit</span>
+        <span class="logo-dot"></span>
+    </div>
+    <p class="tagline">轻量级磁盘数据管理与可视化工具</p>
+    <p class="subtitle">单文件运行 · 跨平台</p>
+    <div class="badges">
+        <span class="badge">SSE 流式</span>
+        <span class="badge purple">多模型 AI</span>
+        <span class="badge warn">系统清理</span>
+        <span class="badge">零依赖部署</span>
+    </div>
+    <div class="stats">
+        <div class="stat"><div class="stat-num">5+</div><div class="stat-label">核心功能</div></div>
+        <div class="stat"><div class="stat-num">8+</div><div class="stat-label">AI 模型</div></div>
+        <div class="stat"><div class="stat-num">3</div><div class="stat-label">平台支持</div></div>
+        <div class="stat"><div class="stat-num">~10MB</div><div class="stat-label">可执行文件</div></div>
+    </div>
+</header>
+
+<section>
+    <div class="section-title">产品特点</div>
+    <div class="highlights">
+        <div class="highlight">
+            <div class="hl-icon">🚫</div>
+            <div class="hl-body">
+                <h4>无捆绑 · 无广告</h4>
+                <p>不捆绑任何第三方软件，无弹窗广告，无推广插件，纯净使用。</p>
+            </div>
+        </div>
+        <div class="highlight">
+            <div class="hl-icon">💤</div>
+            <div class="hl-body">
+                <h4>不驻留后台</h4>
+                <p>用完即走，关闭浏览器自动退出进程，不占用系统资源，无后台守护。</p>
+            </div>
+        </div>
+        <div class="highlight">
+            <div class="hl-icon">📦</div>
+            <div class="hl-body">
+                <h4>单文件 · 免安装</h4>
+                <p>一个可执行文件即可运行，无需安装程序，不写注册表，U 盘随身携带。</p>
+            </div>
+        </div>
+        <div class="highlight">
+            <div class="hl-icon">🔒</div>
+            <div class="hl-body">
+                <h4>本地运行 · 数据不外传</h4>
+                <p>所有文件扫描、清理操作均在本地完成，不上传任何用户数据，隐私安全。</p>
+            </div>
+        </div>
+        <div class="highlight">
+            <div class="hl-icon">⚡</div>
+            <div class="hl-body">
+                <h4>秒级启动 · 极低占用</h4>
+                <p>原生编译，无运行时依赖，启动即用，内存占用极低。</p>
+            </div>
+        </div>
+        <div class="highlight">
+            <div class="hl-icon">🧩</div>
+            <div class="hl-body">
+                <h4>可视化 · 不盲删</h4>
+                <p>清理前展示每项的文件数和占用大小，所见即所删，拒绝"一键黑箱"。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="section-title">核心功能</div>
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">📊</div>
+            <h3>帕累托图可视化</h3>
+            <p>以帕累托图展示目录下文件大小分布，支持自身占比与累计百分比双折线，柱子上方实时标注百分比，可展开"其他"项查看尾部数据。</p>
+            <span class="feature-tag tag-teal">Canvas 绘制</span>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">📁</div>
+            <h3>文件浏览与管理</h3>
+            <p>面包屑导航、磁盘切换、最近访问记录、并发计算文件夹大小。支持右键打开文件所在位置（Windows/macOS/Linux）。</p>
+            <span class="feature-tag tag-teal">右键菜单</span>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🤖</div>
+            <h3>AI 助手（SSE 流式）</h3>
+            <p>VSCode 风格侧边栏，支持上下文记忆、多 API Key 池轮询、自动故障切换。兼容 OpenAI/DeepSeek/Claude/Gemini/Qwen 等厂商。</p>
+            <span class="feature-tag tag-purple">多模型</span>
+            <span class="feature-tag tag-purple">Key 池</span>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🧹</div>
+            <h3>常规清理</h3>
+            <p>扫描并清理系统临时文件、Windows 更新缓存、回收站、缩略图缓存、macOS 用户缓存与日志等。并发扫描、按需勾选、安全删除。</p>
+            <span class="feature-tag tag-orange">安全删除</span>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <h3>智能缓存</h3>
+            <p>GZIP + Gob 二进制缓存文件大小，启动时加载、运行时增量更新。目录变更自动检测，避免重复计算。</p>
+            <span class="feature-tag tag-teal">GZIP+Gob</span>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="section-title">跨平台支持</div>
+    <div class="platforms">
+        <div class="platform"><div class="platform-icon">🪟</div><div class="platform-name">Windows</div></div>
+        <div class="platform"><div class="platform-icon">🍎</div><div class="platform-name">macOS</div></div>
+        <div class="platform"><div class="platform-icon">🐧</div><div class="platform-name">Linux</div></div>
+    </div>
+</section>
+
+<section>
+    <div class="section-title">清理目标一览</div>
+    <table class="cleanup-table">
+        <thead><tr><th>平台</th><th>目标</th><th>路径</th><th>说明</th></tr></thead>
+        <tbody>
+            <tr><td rowspan="5">🪟 Windows</td><td>用户临时文件</td><td><code>%TEMP%</code></td><td>当前用户临时文件</td></tr>
+            <tr><td>系统临时文件</td><td><code>C:\Windows\Temp</code></td><td>系统运行临时文件</td></tr>
+            <tr><td>更新缓存</td><td><code>C:\Windows\SoftwareDistribution\Download</code></td><td>Windows 更新安装包</td></tr>
+            <tr><td>缩略图缓存</td><td><code>%LOCALAPPDATA%\...\Explorer</code></td><td>图片预览缓存</td></tr>
+            <tr><td>回收站</td><td><code>C:\$Recycle.Bin</code></td><td>各盘符回收站</td></tr>
+            <tr><td rowspan="4">🍎 macOS</td><td>用户临时文件</td><td><code>/tmp</code> 或 <code>$TMPDIR</code></td><td>用户临时文件</td></tr>
+            <tr><td>系统临时文件</td><td><code>/var/tmp</code></td><td>系统临时文件</td></tr>
+            <tr><td>用户缓存</td><td><code>~/Library/Caches</code></td><td>应用缓存</td></tr>
+            <tr><td>系统日志</td><td><code>~/Library/Logs</code></td><td>应用与系统日志</td></tr>
+            <tr><td rowspan="2">🐧 Linux</td><td>用户临时文件</td><td><code>/tmp</code></td><td>用户临时文件</td></tr>
+            <tr><td>用户缓存</td><td><code>~/.cache</code></td><td>应用缓存</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<div class="footer">
+    <p>DiskDataKit - 磁盘数据管理工具</p>
+    <p class="version">单文件运行 · 跨平台</p>
+</div>
+
+</div>
+</body>
+</html>
