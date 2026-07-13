@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiskDataKit — 文件管理</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="ioc.png" type="image/png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,7 +19,7 @@
     <header class="app-header">
         <div class="header-inner">
             <a class="brand" href="#" onclick="showHome();return false;">
-                <img class="brand-logo" src="favicon.ico" width="22" height="22" alt="DiskDataKit" aria-hidden="true">
+                <img class="brand-logo" src="ioc.png" width="22" height="22" alt="DiskDataKit" aria-hidden="true">
                 <span class="brand-name" data-text="DiskDataKit">DiskDataKit</span>
                 <span class="brand-dot"></span>
             </a>
@@ -84,6 +84,11 @@
                     <span class="home-card-icon">🛡️</span>
                     <span class="home-card-title">流氓软件检测</span>
                     <span class="home-card-desc">扫描已安装程序、进程、可疑文件，AI 识别</span>
+                </button>
+                <button class="home-card" id="homeCacheBtn">
+                    <span class="home-card-icon">🗄️</span>
+                    <span class="home-card-title">软件缓存清理</span>
+                    <span class="home-card-desc">AI 分析各软件缓存位置，勾选清理</span>
                 </button>
             </div>
             <div class="home-section">
@@ -208,6 +213,12 @@
                     <button id="startupClose" class="expand-close" title="关闭">×</button>
                 </div>
                 <p class="modal-desc">查看并启用/禁用登录启动项、资源管理器插件、IE 加载项</p>
+                <div id="startupCacheBar" class="startup-cache-bar">
+                    <span id="startupCacheTime" class="startup-cache-time">准备中...</span>
+                    <div class="startup-cache-actions">
+                        <button id="startupRefreshBtn" class="startup-cache-btn" title="重新扫描并更新缓存">刷新扫描</button>
+                    </div>
+                </div>
                 <div id="startupStatus" class="cleanup-status"></div>
                 <div id="startupList" class="cleanup-list startup-list hidden"></div>
             </div>
@@ -223,6 +234,33 @@
                 <p class="modal-desc">扫描已安装程序、进程、可疑文件、启动项，AI 判断可疑项（右键可打开文件所在位置）</p>
                 <div id="scanStatus" class="cleanup-status"></div>
                 <div id="scanList" class="cleanup-list scan-list hidden"></div>
+            </div>
+        </div>
+
+        <!-- 软件缓存清理弹窗 -->
+        <div id="cacheModal" class="modal-overlay hidden">
+            <div class="modal-box cleanup-box">
+                <div class="cleanup-header">
+                    <span class="modal-title">软件缓存清理</span>
+                    <button id="cacheClose" class="expand-close" title="关闭">×</button>
+                </div>
+                <p class="modal-desc">AI 分析各软件缓存位置，勾选后清理（右键可打开文件所在位置）</p>
+                <div id="cacheStatus" class="cleanup-status"></div>
+                <div id="cacheList" class="cleanup-list cache-list hidden"></div>
+                <div id="cacheActions" class="cleanup-actions hidden">
+                    <div class="cleanup-summary">
+                        <label class="cleanup-select-all">
+                            <input type="checkbox" id="cacheSelectAll" checked>
+                            <span>全选</span>
+                        </label>
+                        <span id="cacheTotal" class="cleanup-total"></span>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="cacheCancel" class="btn btn-ghost">取消</button>
+                        <button id="cacheDeleteBtn" class="btn btn-danger">清理选中</button>
+                    </div>
+                </div>
+                <div id="cacheResult" class="cleanup-result hidden"></div>
             </div>
         </div>
 
@@ -312,5 +350,6 @@
     <script src="cleanup.js"></script>
     <script src="startup.js"></script>
     <script src="scan.js"></script>
+    <script src="cache.js"></script>
 </body>
 </html>

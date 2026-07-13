@@ -48,7 +48,7 @@ func aiJudgeScanItems(items []ScanItem) {
 		return
 	}
 
-	sem := make(chan struct{}, 8)
+	sem := make(chan struct{}, 500)
 	var wg sync.WaitGroup
 
 	for i := range items {
