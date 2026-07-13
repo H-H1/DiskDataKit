@@ -346,6 +346,20 @@ func enableRegSubkey(cat string, item StartupItem) error {
 	return nil
 }
 
+// resolveCLSIDToPath 通过 HKCR\CLSID\{clsid}\InprocServer32 解析 CLSID 对应的 DLL 路径。
+func resolveCLSIDToPath(clsid string) (string, error) {
+	k, err := registry.OpenKey(registry.CLASSES_ROOT, `CLSID\`+clsid+`\InprocServer32`, registry.READ)
+	if err != nil {
+		return "", err
+	}
+	defer k.Close()
+	dll, _, err := k.GetStringValue("")
+	if err != nil {
+		return "", err
+	}
+	return dll, nil
+}
+
 // toggleStartupItem 启用/禁用指定启动项。
 func toggleStartupItem(category, name, location string, enable bool) error {
 	item := StartupItem{Category: category, Name: name, Location: location}

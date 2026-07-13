@@ -619,6 +619,14 @@ func handleOpenInExplorer(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{"error": "缺少 path 参数"})
 		return
 	}
+
+	// CLSID（如 {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}）解析为 DLL 路径
+	if strings.HasPrefix(path, "{") && strings.HasSuffix(path, "}") {
+		if dll, err := resolveCLSIDToPath(path); err == nil && dll != "" {
+			path = dll
+		}
+	}
+
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})

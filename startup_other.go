@@ -9,3 +9,8 @@ func listStartupItems() []StartupItem { return nil }
 func toggleStartupItem(category, name, location string, enable bool) error {
 	return nil
 }
+
+// resolveCLSIDToPath 在非 Windows 平台空操作。
+func resolveCLSIDToPath(clsid string) (string, error) {
+	return "", nil
+}

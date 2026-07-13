@@ -1954,6 +1954,10 @@ body {
 
 /* 返回栏 */
 .startup-back-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     margin-bottom: 12px;
 }
 
@@ -2031,6 +2035,55 @@ body {
     max-height: 65vh;
     overflow-y: auto;
     padding-right: 4px;
+}
+
+/* 启动项弹窗：弹性布局，底部按钮固定 */
+.startup-box {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.startup-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px;
+}
+
+.startup-box .startup-list {
+    max-height: none;
+}
+
+.startup-footer {
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 14px;
+    margin-top: 12px;
+}
+
+.startup-rescan-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid rgba(78, 224, 208, 0.35);
+    background: rgba(78, 224, 208, 0.1);
+    color: #4ee0d0;
+    transition: all 0.25s var(--ease);
+}
+
+.startup-rescan-btn:hover:not(:disabled) {
+    background: rgba(78, 224, 208, 0.18);
+    border-color: rgba(78, 224, 208, 0.6);
+    box-shadow: 0 0 20px rgba(78, 224, 208, 0.2);
+}
+
+.startup-rescan-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* 折叠分组 */
