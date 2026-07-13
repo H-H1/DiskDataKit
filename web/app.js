@@ -14,6 +14,10 @@ const homeView = document.getElementById('homeView');
 const homeDrives = document.getElementById('homeDrives');
 const homeRecent = document.getElementById('homeRecent');
 const homeBtn = document.getElementById('homeBtn');
+const pickBtn = document.getElementById('pickBtn');
+const upBtn = document.getElementById('upBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const fileNavBtns = [pickBtn, driveSelect, upBtn, refreshBtn];
 
 // 帕累托图元素
 const chartCard = document.getElementById('chartCard');
@@ -168,6 +172,7 @@ function showHome() {
     breadcrumbCard.classList.add('hidden');
     chartCard.classList.add('hidden');
     homeBtn.classList.add('hidden');
+    fileNavBtns.forEach(el => el.classList.add('hidden'));
     if (chartAnimId) { cancelAnimationFrame(chartAnimId); chartAnimId = null; }
     footerInfo.textContent = '';
     renderHomeLists();
@@ -178,6 +183,7 @@ function showFileView() {
     fileCard.classList.remove('hidden');
     breadcrumbCard.classList.remove('hidden');
     homeBtn.classList.remove('hidden');
+    fileNavBtns.forEach(el => el.classList.remove('hidden'));
 }
 
 // 渲染首页磁盘与最近访问列表
@@ -1359,7 +1365,6 @@ async function pickFolder() {
 document.getElementById('refreshBtn').onclick = () => loadPath(currentPath);
 document.getElementById('pickBtn').onclick = () => pickFolder();
 document.getElementById('homePickBtn').onclick = () => pickFolder();
-document.getElementById('homeCleanupBtn').onclick = () => document.getElementById('cleanupBtn').click();
 homeBtn.onclick = () => showHome();
 document.getElementById('upBtn').onclick = () => {
     if (!currentPath) return;

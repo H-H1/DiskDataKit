@@ -1,6 +1,5 @@
 // 常规清理模块
 const cleanupModal = document.getElementById('cleanupModal');
-const cleanupBtn = document.getElementById('cleanupBtn');
 const cleanupClose = document.getElementById('cleanupClose');
 const cleanupStatus = document.getElementById('cleanupStatus');
 const cleanupList = document.getElementById('cleanupList');
@@ -14,7 +13,7 @@ const cleanupResult = document.getElementById('cleanupResult');
 let cleanupTargets = [];
 
 // 打开弹窗
-cleanupBtn.addEventListener('click', () => {
+document.getElementById('homeCleanupBtn').addEventListener('click', () => {
     cleanupModal.classList.remove('hidden');
 });
 
