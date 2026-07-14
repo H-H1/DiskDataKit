@@ -232,14 +232,19 @@
 
         <!-- 流氓软件检测弹窗 -->
         <div id="scanModal" class="modal-overlay hidden">
-            <div class="modal-box cleanup-box">
+            <div class="modal-box cleanup-box startup-box">
                 <div class="cleanup-header">
                     <span class="modal-title">流氓软件检测</span>
                     <button id="scanClose" class="expand-close" title="关闭">×</button>
                 </div>
                 <p class="modal-desc">扫描已安装程序、进程、可疑文件、启动项，AI 判断可疑项（右键可打开文件所在位置）</p>
-                <div id="scanStatus" class="cleanup-status"></div>
-                <div id="scanList" class="cleanup-list scan-list hidden"></div>
+                <div class="startup-body">
+                    <div id="scanStatus" class="cleanup-status"></div>
+                    <div id="scanList" class="cleanup-list scan-list hidden"></div>
+                </div>
+                <div class="startup-footer">
+                    <button id="scanRescanBtn" class="startup-rescan-btn">重新扫描</button>
+                </div>
             </div>
         </div>
 
@@ -370,8 +375,14 @@
                 </button>
             </div>
             <div class="chat-input-hint">
-                <select id="chatProviderSelect" class="chat-provider-select" title="切换模型">
-                </select>
+                <div id="chatModelDropdown" class="chat-model-dropdown">
+                    <div id="chatModelTrigger" class="chat-model-trigger" title="切换模型">
+                        <span id="chatModelIcon" class="chat-model-icon"></span>
+                        <span id="chatModelLabel" class="chat-model-label">加载中...</span>
+                        <svg class="chat-model-chevron" viewBox="0 0 10 6" fill="currentColor"><path d="M5 6L0 0h10z"/></svg>
+                    </div>
+                    <div id="chatModelOptions" class="chat-model-options hidden"></div>
+                </div>
             </div>
         </div>
     </aside>
@@ -414,10 +425,16 @@
             <!-- 状态提示 -->
             <div id="cmStatus" class="custom-model-status"></div>
 
+            <!-- 已配置的模型列表（可删除） -->
+            <div class="cm-my-models-section">
+                <div class="cm-my-models-title">已配置的模型</div>
+                <div id="cmMyModelsList" class="cm-my-models-list"></div>
+            </div>
+
             <!-- 操作按钮 -->
             <div class="modal-actions">
                 <button id="cmCancelBtn" class="btn btn-ghost">取消</button>
-                <button id="cmSaveBtn" class="btn btn-accent" disabled>保存</button>
+                <button id="cmSaveBtn" class="btn btn-accent">保存</button>
             </div>
             <div class="custom-model-tip">提示：推荐使用 DeepSeek 和阿里云（DashScope），模型列表获取准确。字节豆包官方 API 返回的模型列表与实际可用的不一致，需手动确认。</div>
         </div>

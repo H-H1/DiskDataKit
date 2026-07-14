@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -76,7 +77,7 @@ func scanInstalled() []ScanItem {
 // scanProcesses 通过 PowerShell CIM 列出运行中进程及其路径。
 func scanProcesses() []ScanItem {
 	ps := `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-@(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -ne $null } | Select-Object Name,ExecutablePath) | ConvertTo-Json -Compress`
+@(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -ne $null } | Select-Object Name,ExecutablePath,@{N='CPU';E={[math]::Round($_.UserModeTime/1e7,1)}},@{N='MemMB';E={[math]::Round($_.WorkingSetSize/1MB,1)}}) | ConvertTo-Json -Compress`
 	cmd := exec.Command("powershell", "-NoProfile", "-STA", "-WindowStyle", "Hidden", "-Command", ps)
 	setNoWindow(cmd)
 	out, err := cmd.Output()
@@ -85,8 +86,10 @@ func scanProcesses() []ScanItem {
 	}
 	out = trimBOM(out)
 	var procs []struct {
-		Name           string `json:"Name"`
-		ExecutablePath string `json:"ExecutablePath"`
+		Name           string  `json:"Name"`
+		ExecutablePath string  `json:"ExecutablePath"`
+		CPU            float64 `json:"CPU"`
+		MemMB          float64 `json:"MemMB"`
 	}
 	if err := json.Unmarshal(out, &procs); err != nil {
 		return nil
@@ -101,6 +104,8 @@ func scanProcesses() []ScanItem {
 			Name:     p.Name,
 			Path:     p.ExecutablePath,
 			Location: "运行中进程",
+			CPUUsage: fmt.Sprintf("%.1f%%", p.CPU),
+			MemUsage: fmt.Sprintf("%.1fMB", p.MemMB),
 		})
 	}
 	return items

@@ -313,6 +313,14 @@ body {
     opacity: 0;
 }
 
+/* 未就绪状态：半透明提示，但按钮仍可点击（点击会给出具体提示） */
+.btn-accent.not-ready {
+    opacity: 0.45;
+}
+.btn-accent.not-ready:hover {
+    opacity: 0.7;
+}
+
 #pickBtn svg {
     transition: transform 0.3s var(--ease);
 }
@@ -1424,24 +1432,38 @@ body {
 }
 
 .chat-provider-select {
-    background: var(--bg-2);
-    border: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(78, 224, 208, 0.06), rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--border-strong);
     color: var(--fg-default);
     font-size: 12px;
-    padding: 3px 8px;
-    border-radius: 5px;
+    padding: 5px 28px 5px 10px;
+    border-radius: 8px;
     cursor: pointer;
     outline: none;
     font-family: inherit;
-    transition: all 0.15s var(--ease);
+    transition: all 0.2s var(--ease);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238b909a' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 10px 6px;
 }
 
 .chat-provider-select:hover {
-    border-color: var(--border-strong);
+    border-color: rgba(78, 224, 208, 0.35);
+    background-color: rgba(78, 224, 208, 0.04);
 }
 
 .chat-provider-select:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(78, 224, 208, 0.1);
+}
+
+.chat-provider-select option {
+    background: var(--surface-solid);
+    color: var(--fg-default);
+    padding: 4px 8px;
 }
 
 /* 消息区 */
@@ -2327,6 +2349,43 @@ body {
     overflow-y: auto;
 }
 
+/* 在 startup-box 内不自行滚动，由 startup-body 统一滚动，sticky 才能生效 */
+.startup-box .scan-list {
+    max-height: none;
+    overflow: visible;
+}
+
+/* overflow: hidden 会破坏子元素 sticky，scan-list 内改为 visible */
+.scan-list .startup-group {
+    overflow: visible;
+}
+
+/* 滚动时固定顶部信息栏 */
+.scan-list .scan-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--surface-solid);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.scan-list .scan-sticky-header .startup-back-bar {
+    margin-bottom: 6px;
+}
+
+.scan-list .scan-sticky-header .startup-cache-bar {
+    margin-bottom: 0;
+}
+
+/* 滚动时固定分类标题，top 由 JS 动态设置 */
+.scan-list .startup-group-header {
+    position: sticky;
+    z-index: 15;
+    background: var(--surface-solid);
+    border-bottom: 1px solid var(--border);
+}
+
 .scan-summary {
     font-size: 12.5px;
     color: var(--fg-muted);
@@ -2525,6 +2584,203 @@ body {
     background: rgba(78, 224, 208, 0.04);
     border: 1px solid rgba(78, 224, 208, 0.1);
     border-radius: 6px;
+}
+
+/* ==================== 自定义模型下拉菜单 ==================== */
+
+.chat-model-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.chat-model-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: linear-gradient(135deg, rgba(78, 224, 208, 0.06), rgba(255, 255, 255, 0.02));
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+    user-select: none;
+}
+
+.chat-model-trigger:hover {
+    border-color: rgba(78, 224, 208, 0.35);
+    background-color: rgba(78, 224, 208, 0.04);
+}
+
+.chat-model-trigger.open {
+    border-color: var(--accent);
+}
+
+.chat-model-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.chat-model-label {
+    flex: 1;
+    font-size: 12px;
+    color: var(--fg-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-model-chevron {
+    width: 10px;
+    height: 6px;
+    flex-shrink: 0;
+    color: var(--fg-muted);
+    transition: transform 0.2s var(--ease);
+}
+
+.chat-model-trigger.open .chat-model-chevron {
+    transform: rotate(180deg);
+}
+
+.chat-model-options {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--surface-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    padding: 4px;
+}
+
+.chat-model-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s var(--ease);
+}
+
+.chat-model-option:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-model-option.active {
+    background: rgba(78, 224, 208, 0.08);
+}
+
+.chat-model-option-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.chat-model-option-label {
+    flex: 1;
+    font-size: 12px;
+    color: var(--fg-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-model-limited {
+    display: inline-block;
+    font-size: 9px;
+    color: var(--warning);
+    background: rgba(255, 193, 7, 0.12);
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* 已配置模型列表（删除） */
+.cm-my-models-section {
+    margin-top: 16px;
+}
+
+.cm-my-models-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 8px;
+}
+
+.cm-my-models-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.cm-my-model-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s var(--ease);
+}
+
+.cm-my-model-item:hover {
+    border-color: var(--border-strong);
+}
+
+.cm-my-model-name {
+    flex: 1;
+    font-size: 12px;
+    color: var(--fg-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cm-my-model-del {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: none;
+    background: rgba(255, 107, 107, 0.1);
+    color: rgba(255, 107, 107, 0.7);
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s var(--ease);
+    flex-shrink: 0;
+}
+
+.cm-my-model-del:hover {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+.cm-my-model-del:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* ==================== 文件夹追踪 ==================== */
@@ -2774,6 +3030,13 @@ body {
     margin-top: 2px;
 }
 
+.scan-item-resource {
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 2px;
+    font-weight: 600;
+}
+
 .scan-item-reason {
     font-size: 11px;
     color: var(--fg-subtle);
@@ -2942,7 +3205,7 @@ body {
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: none;
     }
 }
 
