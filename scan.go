@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +30,40 @@ var scanCategoryNames = map[string]string{
 	"process":   "运行中进程",
 	"file":      "可疑文件",
 	"startup":   "启动项",
+}
+
+// scanCacheRecord 缓存记录元信息（列表用）。
+type scanCacheRecord struct {
+	ID           string `json:"id"`
+	SavedAt      string `json:"savedAt"`
+	ItemsCount   int    `json:"itemsCount"`
+	SafeCount    int    `json:"safeCount"`
+	SusCount     int    `json:"susCount"`
+	UnknownCount int    `json:"unknownCount"`
+}
+
+// scanCacheData 单条缓存完整数据。
+type scanCacheData struct {
+	SavedAt string     `json:"savedAt"`
+	Items   []ScanItem `json:"items"`
+}
+
+// scanCacheDir 返回流氓软件扫描缓存目录路径。
+func scanCacheDir() string {
+	var dir string
+	switch {
+	case isWindows:
+		dir = filepath.Join(os.Getenv("LOCALAPPDATA"), "DiskDataKit", "scan_cache")
+	case isDarwin:
+		dir = filepath.Join(os.Getenv("HOME"), "Library", "Caches", "DiskDataKit", "scan_cache")
+	default:
+		dir = os.Getenv("XDG_CACHE_HOME")
+		if dir == "" {
+			dir = filepath.Join(os.Getenv("HOME"), ".cache")
+		}
+		dir = filepath.Join(dir, "DiskDataKit", "scan_cache")
+	}
+	return dir
 }
 
 // handleScanList 扫描系统并返回所有项（含 AI 判断结果）。

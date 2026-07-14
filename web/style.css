@@ -2527,6 +2527,199 @@ body {
     border-radius: 6px;
 }
 
+/* ==================== 文件夹追踪 ==================== */
+
+.track-box {
+    width: 560px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.track-add-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.track-list {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.track-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.track-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border);
+}
+
+.track-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-item-path {
+    font-size: 11px;
+    color: var(--fg-subtle);
+    font-family: var(--font-mono);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-item-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.track-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s var(--ease);
+    white-space: nowrap;
+}
+
+.track-btn:hover {
+    border-color: var(--border-strong);
+    color: var(--fg-bright);
+}
+
+.track-btn.danger:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.track-item-body {
+    padding: 10px 14px;
+}
+
+.track-summary {
+    font-size: 12px;
+    color: var(--fg-muted);
+    margin-bottom: 8px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.track-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.track-delta-up {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.track-delta-down {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.track-diff-section {
+    margin-top: 8px;
+}
+
+.track-diff-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.track-diff-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: 12px;
+}
+
+.track-diff-icon {
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.track-diff-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    color: var(--fg-default);
+}
+
+.track-diff-size {
+    font-size: 11px;
+    color: var(--fg-subtle);
+    white-space: nowrap;
+}
+
+.track-empty {
+    text-align: center;
+    padding: 32px;
+    color: var(--fg-subtle);
+    font-size: 13px;
+}
+
+.track-child-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+
+.track-child-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    font-size: 12px;
+}
+
+.track-child-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    color: var(--fg-default);
+}
+
+.track-child-size {
+    font-size: 11px;
+    color: var(--fg-subtle);
+    white-space: nowrap;
+}
+
 .scan-item {
     display: flex;
     align-items: center;

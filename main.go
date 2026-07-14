@@ -77,6 +77,9 @@ var sizeCache *SizeCache
 // 最近访问文件夹记录，启动时加载，选择时更新。
 var recentFolders *RecentStore
 
+// 文件夹追踪管理器，启动时加载。
+var trackStore *TrackStore
+
 func main() {
 	// 非管理员/root 则自动提权重启（Windows UAC / macOS osascript / Linux pkexec）
 	// if !isAdmin() {
@@ -94,6 +97,11 @@ func main() {
 	if err != nil {
 		log.Printf("最近访问初始化失败: %v", err)
 		recentFolders = &RecentStore{FilePath: recentFilePath(), Folders: []string{}}
+	}
+	trackStore, err = NewTrackStore(trackFilePath())
+	if err != nil {
+		log.Printf("文件夹追踪初始化失败: %v", err)
+		trackStore = &TrackStore{FilePath: trackFilePath(), Entries: make(map[string]*TrackEntry)}
 	}
 
 	// 将嵌入的 web 目录作为静态资源服务（禁用缓存，确保更新后立即生效）
@@ -123,6 +131,10 @@ func main() {
 	http.HandleFunc("/api/scan/list", handleScanList)
 	http.HandleFunc("/api/cache/list", handleCacheList)
 	http.HandleFunc("/api/cache/delete", handleCacheDelete)
+	http.HandleFunc("/api/track/list", handleTrackList)
+	http.HandleFunc("/api/track/add", handleTrackAdd)
+	http.HandleFunc("/api/track/remove", handleTrackRemove)
+	http.HandleFunc("/api/track/refresh", handleTrackRefresh)
 
 	// 初始化 DeepSeek AI 客户端
 	initAI()
@@ -215,6 +227,11 @@ func cacheFilePath() string {
 // recentFilePath 返回最近访问文件夹记录的文件路径。
 func recentFilePath() string {
 	return filepath.Join(filepath.Dir(cacheFilePath()), "recent_folders.bin")
+}
+
+// trackFilePath 返回文件夹追踪数据的文件路径。
+func trackFilePath() string {
+	return filepath.Join(filepath.Dir(cacheFilePath()), "track_folders.bin")
 }
 
 // CacheData 单条缓存数据，文件绝对路径作为 map key。
