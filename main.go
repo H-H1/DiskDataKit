@@ -79,10 +79,10 @@ var recentFolders *RecentStore
 
 func main() {
 	// 非管理员/root 则自动提权重启（Windows UAC / macOS osascript / Linux pkexec）
-	if !isAdmin() {
-		elevate()
-		return
-	}
+	// if !isAdmin() {
+	// 	elevate()
+	// 	return
+	// }
 	fmt.Printf("DiskDataKit 已启动 | 系统: %s\n", goos)
 	var err error
 	sizeCache, err = NewSizeCache(cacheFilePath())
@@ -112,6 +112,9 @@ func main() {
 	http.HandleFunc("/api/chat", handleChat)
 	http.HandleFunc("/api/chat/clear", handleChatClear)
 	http.HandleFunc("/api/chat/config", handleChatConfig)
+	http.HandleFunc("/api/chat/providers", handleChatProviders)
+	http.HandleFunc("/api/chat/models", handleChatModels)
+	http.HandleFunc("/api/chat/config/save", handleChatConfigSave)
 	http.HandleFunc("/api/cleanup/scan", handleCleanupScan)
 	http.HandleFunc("/api/cleanup/delete", handleCleanupDelete)
 	http.HandleFunc("/api/startup/list", handleStartupList)

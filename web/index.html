@@ -164,6 +164,12 @@
                 </svg>
                 打开文件夹所在位置
             </button>
+            <button id="ctxQuoteToAI" class="ctx-item">
+                <svg class="ctx-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                    <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM4.5 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm5 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-1.5 4.5a3 3 0 0 1-2.5-1.34.5.5 0 0 1 .83-.55A2 2 0 0 0 8 10a2 2 0 0 0 1.67-.89.5.5 0 1 1 .83.55 3 3 0 0 1-2.5 1.34Z"/>
+                </svg>
+                引用给AI
+            </button>
         </div>
 
         <!-- 常规清理弹窗 -->
@@ -312,6 +318,9 @@
                 <div id="chatStatus" class="chat-status">DeepSeek</div>
             </div>
             <div class="chat-sidebar-actions">
+                <button id="chatCustomModelBtn" class="chat-icon-btn" title="自定义模型">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
+                </button>
                 <button id="chatNewBtn" class="chat-icon-btn" title="新对话">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M3.25 7a.75.75 0 0 1 .75.75v3.5a.25.25 0 0 0 .25.25h7.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 11.75 13h-7.5A1.75 1.75 0 0 1 2.5 11.25v-3.5A.75.75 0 0 1 3.25 7Zm4.5-5a.75.75 0 0 1 .75.75v5.19l1.72-1.72a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734l-3 3a.75.75 0 0 1-1.06 0l-3-3a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215L7.5 7.94V2.75A.75.75 0 0 1 8.25 2Z"/></svg>
                 </button>
@@ -340,6 +349,54 @@
             </div>
         </div>
     </aside>
+
+    <!-- 自定义模型弹窗 -->
+    <div id="customModelModal" class="modal-overlay hidden">
+        <div class="modal-box custom-model-box">
+            <div class="cleanup-header">
+                <span class="modal-title">自定义模型</span>
+                <button id="customModelClose" class="expand-close" title="关闭">×</button>
+            </div>
+            <p class="modal-desc">选择厂商、输入 API Key，获取并选择要添加的模型</p>
+
+            <!-- 厂商选择 -->
+            <div class="custom-model-field">
+                <label class="custom-model-label">厂商</label>
+                <select id="cmProviderSelect" class="custom-model-select">
+                    <option value="">请选择厂商...</option>
+                </select>
+                <div id="cmProviderDesc" class="custom-model-provider-desc"></div>
+            </div>
+
+            <!-- API Key -->
+            <div class="custom-model-field">
+                <label class="custom-model-label">API Key</label>
+                <div class="custom-model-apikey-row">
+                    <input type="password" id="cmApiKey" class="modal-input custom-model-apikey-input" placeholder="sk-..." autocomplete="off">
+                    <button id="cmFetchModelsBtn" class="btn btn-accent custom-model-fetch-btn">获取模型</button>
+                </div>
+            </div>
+
+            <!-- 模型列表 -->
+            <div class="custom-model-field">
+                <label class="custom-model-label">模型列表 <span id="cmModelCount" class="custom-model-count"></span></label>
+                <div id="cmModelList" class="custom-model-list">
+                    <div class="custom-model-empty">请先获取模型列表</div>
+                </div>
+            </div>
+
+            <!-- 状态提示 -->
+            <div id="cmStatus" class="custom-model-status"></div>
+
+            <!-- 操作按钮 -->
+            <div class="modal-actions">
+                <button id="cmCancelBtn" class="btn btn-ghost">取消</button>
+                <button id="cmSaveBtn" class="btn btn-accent" disabled>保存</button>
+            </div>
+            <div class="custom-model-tip">提示：推荐使用 DeepSeek 和阿里云（DashScope），模型列表获取准确。字节豆包官方 API 返回的模型列表与实际可用的不一致，需手动确认。</div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <script src="chat.js"></script>
     <script src="cleanup.js"></script>

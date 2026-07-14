@@ -37,7 +37,10 @@ const remainCountEl = document.getElementById('remainCount');
 const expandHint = document.getElementById('expandHint');
 const ctxMenu = document.getElementById('ctxMenu');
 const ctxOpenExplorer = document.getElementById('ctxOpenExplorer');
+const ctxQuoteToAI = document.getElementById('ctxQuoteToAI');
 let ctxTargetPath = '';   // 当前右键菜单对应的文件路径
+let ctxTargetIsDir = false;
+let ctxTargetName = '';
 
 let currentPath = '';
 let loadToken = 0;
@@ -413,7 +416,7 @@ function renderList(items) {
         // 右键打开上下文菜单
         tr.addEventListener('contextmenu', e => {
             e.preventDefault();
-            showCtxMenu(e.clientX, e.clientY, item.path);
+            showCtxMenu(e.clientX, e.clientY, item.path, item.isDir, item.name);
         });
 
         fileList.appendChild(tr);
@@ -842,8 +845,10 @@ document.getElementById('toggleCumulative').addEventListener('change', e => {
 // ==================== 上下文菜单 ====================
 
 // 在指定位置显示上下文菜单
-function showCtxMenu(clientX, clientY, filePath) {
+function showCtxMenu(clientX, clientY, filePath, isDir, name) {
     ctxTargetPath = filePath;
+    ctxTargetIsDir = !!isDir;
+    ctxTargetName = name || '';
     ctxMenu.classList.remove('hidden');
     // 防止超出视口
     const rect = ctxMenu.getBoundingClientRect();
@@ -871,6 +876,19 @@ ctxOpenExplorer.addEventListener('click', () => {
         })
         .catch(() => {});
     hideCtxMenu();
+});
+
+// 点击"引用给AI"
+ctxQuoteToAI.addEventListener('click', () => {
+    if (!ctxTargetPath) return;
+    const path = ctxTargetPath;
+    const isDir = ctxTargetIsDir;
+    const name = ctxTargetName;
+    hideCtxMenu();
+    // 调用 chat.js 中的引用函数
+    if (typeof referenceToAI === 'function') {
+        referenceToAI(path, isDir, name);
+    }
 });
 
 // 点击其他区域关闭菜单
@@ -916,21 +934,21 @@ paretoCanvas.addEventListener('click', e => {
         return;
     }
 
-    // 常规条 → 显示上下文菜单
+    // 常规条 -> 显示上下文菜单
     const d = chartData[idx];
     if (d.path) {
-        showCtxMenu(e.clientX, e.clientY, d.path);
+        showCtxMenu(e.clientX, e.clientY, d.path, d.isDir, d.name);
     }
 });
 
-// 右键主图 → 显示菜单
+// 右键主图 -> 显示菜单
 paretoCanvas.addEventListener('contextmenu', e => {
     const idx = findBarAt(paretoCanvas, chartBarRects, e.clientX, e.clientY);
     if (idx < 0) return;
     const d = chartData[idx];
     if (d.path) {
         e.preventDefault();
-        showCtxMenu(e.clientX, e.clientY, d.path);
+        showCtxMenu(e.clientX, e.clientY, d.path, d.isDir, d.name);
     }
 });
 
@@ -1031,18 +1049,18 @@ expandCanvas.addEventListener('click', e => {
     if (idx < 0) return;
     const d = expandData[idx];
     if (d.path) {
-        showCtxMenu(e.clientX, e.clientY, d.path);
+        showCtxMenu(e.clientX, e.clientY, d.path, d.isDir, d.name);
     }
 });
 
-// 右键展开图 → 显示菜单
+// 右键展开图 -> 显示菜单
 expandCanvas.addEventListener('contextmenu', e => {
     const idx = findBarAt(expandCanvas, expandBarRects, e.clientX, e.clientY);
     if (idx < 0) return;
     const d = expandData[idx];
     if (d.path) {
         e.preventDefault();
-        showCtxMenu(e.clientX, e.clientY, d.path);
+        showCtxMenu(e.clientX, e.clientY, d.path, d.isDir, d.name);
     }
 });
 
