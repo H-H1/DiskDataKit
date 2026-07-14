@@ -7,10 +7,55 @@ const chatStatus = document.getElementById('chatStatus');
 const chatToggleHeaderBtn = document.getElementById('chatToggleHeaderBtn');
 const chatCloseBtn = document.getElementById('chatCloseBtn');
 const chatNewBtn = document.getElementById('chatNewBtn');
-const chatProviderSelect = document.getElementById('chatProviderSelect');
+const chatModelTrigger = document.getElementById('chatModelTrigger');
+const chatModelLabel = document.getElementById('chatModelLabel');
+const chatModelIcon = document.getElementById('chatModelIcon');
+const chatModelOptions = document.getElementById('chatModelOptions');
+const chatModelDropdown = document.getElementById('chatModelDropdown');
 
 let chatSessionID = 'session-' + Date.now();
 let chatSending = false;
+let chatCurrentModel = '';
+
+// 厂商图标映射
+const providerIcons = {
+    deepseek:   { letter: 'D', color: '#4D6BFE', bg: 'rgba(77, 107, 254, 0.15)' },
+    alibaba:    { letter: 'Q', color: '#615CED', bg: 'rgba(97, 92, 237, 0.15)' },
+    bytedance:  { letter: 'B', color: '#325AB4', bg: 'rgba(50, 90, 180, 0.15)' },
+    zhipu:      { letter: 'Z', color: '#1A73E8', bg: 'rgba(26, 115, 232, 0.15)' },
+    minimax:    { letter: 'M', color: '#FF6B35', bg: 'rgba(255, 107, 53, 0.15)' },
+    xiaomi:     { letter: 'X', color: '#FF6900', bg: 'rgba(255, 105, 0, 0.15)' },
+    unknown:    { letter: 'AI', color: '#4EE0D0', bg: 'rgba(78, 224, 208, 0.15)' },
+};
+
+function getProviderByBaseURL(baseURL) {
+    if (!baseURL) return 'unknown';
+    const u = baseURL.toLowerCase();
+    if (u.includes('deepseek')) return 'deepseek';
+    if (u.includes('dashscope') || u.includes('aliyun')) return 'alibaba';
+    if (u.includes('volces') || u.includes('ark.cn')) return 'bytedance';
+    if (u.includes('bigmodel')) return 'zhipu';
+    if (u.includes('minimaxi')) return 'minimax';
+    if (u.includes('xiaomimimo')) return 'xiaomi';
+    return 'unknown';
+}
+
+function getProviderByModelName(name) {
+    const n = name.toLowerCase();
+    if (n.startsWith('deepseek')) return 'deepseek';
+    if (n.startsWith('qwen') || n.startsWith('chatglm')) return 'alibaba';
+    if (n.startsWith('doubao')) return 'bytedance';
+    if (n.startsWith('glm')) return 'zhipu';
+    if (n.startsWith('minimax') || n.startsWith('abab')) return 'minimax';
+    if (n.startsWith('mimo')) return 'xiaomi';
+    return 'unknown';
+}
+
+function getProviderIcon(name, baseURL) {
+    let key = getProviderByBaseURL(baseURL);
+    if (key === 'unknown') key = getProviderByModelName(name);
+    return providerIcons[key] || providerIcons.unknown;
+}
 
 // 侧边栏开关
 function toggleChat(open) {
@@ -27,7 +72,7 @@ function toggleChat(open) {
 chatToggleHeaderBtn.addEventListener('click', () => toggleChat());
 chatCloseBtn.addEventListener('click', () => toggleChat(false));
 
-// 初始化：加载厂商列表 + 检查配置状态
+// 初始化：加载模型列表 + 检查配置状态
 async function initChat() {
     try {
         const resp = await fetch('/api/chat/config');
@@ -36,36 +81,86 @@ async function initChat() {
         if (!data.configured) {
             chatStatus.textContent = '未配置';
             chatStatus.classList.add('not-configured');
+            chatModelLabel.textContent = '未配置';
             return;
         }
 
-        // 填充厂商下拉框
-        chatProviderSelect.innerHTML = '';
+        // 构建自定义下拉列表
+        chatModelOptions.innerHTML = '';
+        let currentProvider = null;
         if (data.providers) {
             for (const p of data.providers) {
-                const opt = document.createElement('option');
-                opt.value = p.name;
-                opt.textContent = p.limited ? p.name + ' (限时)' : p.name;
-                if (p.name === data.currentProvider) opt.selected = true;
-                chatProviderSelect.appendChild(opt);
+                const icon = getProviderIcon(p.name, p.baseURL);
+                const item = document.createElement('div');
+                item.className = 'chat-model-option' + (p.name === data.currentProvider ? ' active' : '');
+                item.dataset.value = p.name;
+                item.dataset.limited = p.limited ? '1' : '';
+                item.innerHTML = `
+                    <span class="chat-model-option-icon" style="background:${icon.bg};color:${icon.color}">${icon.letter}</span>
+                    <span class="chat-model-option-label">${p.name}${p.limited ? ' <span class="chat-model-limited">限时</span>' : ''}</span>
+                `;
+                item.addEventListener('click', () => {
+                    selectModel(p.name, p.limited);
+                });
+                chatModelOptions.appendChild(item);
+                if (p.name === data.currentProvider) currentProvider = p;
             }
         }
 
-        // 更新状态
-        const cur = data.providers && data.providers.find(p => p.name === data.currentProvider);
-        chatStatus.textContent = data.currentProvider || '已配置';
-        chatStatus.classList.toggle('limited', !!(cur && cur.limited));
+        // 设置当前选中
+        if (currentProvider) {
+            chatCurrentModel = currentProvider.name;
+            chatModelLabel.textContent = currentProvider.name + (currentProvider.limited ? ' (限时)' : '');
+            const icon = getProviderIcon(currentProvider.name, currentProvider.baseURL);
+            chatModelIcon.textContent = icon.letter;
+            chatModelIcon.style.background = icon.bg;
+            chatModelIcon.style.color = icon.color;
+            chatStatus.textContent = currentProvider.name;
+            chatStatus.classList.toggle('limited', !!currentProvider.limited);
+        }
     } catch (e) {
         // 忽略
     }
 }
 
-// 切换模型时更新状态显示
-chatProviderSelect.addEventListener('change', () => {
-    const opt = chatProviderSelect.options[chatProviderSelect.selectedIndex];
-    const isLimited = opt && opt.textContent.includes('限时');
-    chatStatus.textContent = chatProviderSelect.value;
-    chatStatus.classList.toggle('limited', isLimited);
+// 选择模型
+function selectModel(name, limited) {
+    chatCurrentModel = name;
+    const selectedItem = chatModelOptions.querySelector(`.chat-model-option[data-value="${name}"]`);
+    if (selectedItem) {
+        const iconEl = selectedItem.querySelector('.chat-model-option-icon');
+        chatModelLabel.textContent = name + (limited ? ' (限时)' : '');
+        chatModelIcon.textContent = iconEl.textContent;
+        chatModelIcon.style.background = iconEl.style.background;
+        chatModelIcon.style.color = iconEl.style.color;
+        chatModelOptions.querySelectorAll('.chat-model-option').forEach(el => el.classList.remove('active'));
+        selectedItem.classList.add('active');
+    }
+    chatStatus.textContent = name;
+    chatStatus.classList.toggle('limited', !!limited);
+    chatModelOptions.classList.add('hidden');
+    chatModelTrigger.classList.remove('open');
+    // 同步切换后端默认模型，让流氓软件检测/启动项分析/缓存分析也使用此模型
+    fetch('/api/chat/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: name })
+    }).catch(() => {});
+}
+
+// 下拉开关
+chatModelTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    chatModelOptions.classList.toggle('hidden');
+    chatModelTrigger.classList.toggle('open');
+});
+
+// 点击外部关闭下拉
+document.addEventListener('click', (e) => {
+    if (!chatModelDropdown.contains(e.target)) {
+        chatModelOptions.classList.add('hidden');
+        chatModelTrigger.classList.remove('open');
+    }
 });
 
 // 发送消息
@@ -78,18 +173,14 @@ async function sendChatMessage() {
     chatInput.value = '';
     autoResizeInput();
 
-    // 移除欢迎消息
     const welcome = chatMessages.querySelector('.chat-welcome');
     if (welcome) welcome.remove();
 
-    // 添加用户消息
     addMessage('user', text);
 
-    // 添加 AI 回复占位
     const aiEl = addMessage('assistant', '');
     const contentEl = aiEl.querySelector('.chat-msg-content');
 
-    // 显示打字指示器
     const typing = document.createElement('div');
     typing.className = 'chat-typing';
     typing.innerHTML = '<span></span><span></span><span></span>';
@@ -102,7 +193,7 @@ async function sendChatMessage() {
             body: JSON.stringify({
                 message: text,
                 sessionID: chatSessionID,
-                model: chatProviderSelect.value || ''
+                model: chatCurrentModel || ''
             })
         });
 
@@ -114,7 +205,6 @@ async function sendChatMessage() {
             return;
         }
 
-        // 读取 SSE 流
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -169,26 +259,22 @@ async function sendChatMessage() {
     }
 }
 
-// 添加消息（VSCode 风格：头像 + 角色标签 + 内容）
+// 添加消息
 function addMessage(role, content) {
     const el = document.createElement('div');
     el.className = 'chat-msg ' + role;
 
-    // 头像
     const avatar = document.createElement('div');
     avatar.className = 'chat-msg-avatar';
     avatar.textContent = role === 'user' ? '🧑' : role === 'error' ? '⚠' : '🤖';
 
-    // 消息体
     const body = document.createElement('div');
     body.className = 'chat-msg-body';
 
-    // 角色标签
     const roleLabel = document.createElement('div');
     roleLabel.className = 'chat-msg-role';
     roleLabel.textContent = role === 'user' ? 'You' : role === 'error' ? 'Error' : 'Assistant';
 
-    // 内容
     const contentEl = document.createElement('div');
     contentEl.className = 'chat-msg-content';
     if (content) {
@@ -205,50 +291,34 @@ function addMessage(role, content) {
     return el;
 }
 
-// 滚动到底部
 function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// 简单 Markdown 渲染
 function renderMarkdown(text) {
     let html = escapeHtml(text);
-
-    // 代码块
     html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
         return '<pre><code>' + code.trim() + '</code></pre>';
     });
-
-    // 行内代码
     html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // 加粗
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // 无序列表
     html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
     html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
-
-    // 换行
     html = html.replace(/\n/g, '<br>');
-
     return html;
 }
 
-// HTML 转义
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// 自动调整输入框高度
 function autoResizeInput() {
     chatInput.style.height = 'auto';
     chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 }
 
-// 事件绑定
 chatSendBtn.addEventListener('click', sendChatMessage);
 
 chatInput.addEventListener('keydown', e => {
@@ -260,7 +330,6 @@ chatInput.addEventListener('keydown', e => {
 
 chatInput.addEventListener('input', autoResizeInput);
 
-// 新对话
 chatNewBtn.addEventListener('click', async () => {
     try {
         await fetch('/api/chat/clear?sessionID=' + encodeURIComponent(chatSessionID), { method: 'POST' });
@@ -277,66 +346,49 @@ chatNewBtn.addEventListener('click', async () => {
     chatInput.focus();
 });
 
-// 初始化
 initChat();
 toggleChat(true);
 
 // ==================== 引用给AI ====================
 
-// 引用文件/目录给 AI：目录则获取文件列表，文件则直接引用路径
 async function referenceToAI(path, isDir, name) {
-    // 确保 AI 侧边栏打开
     toggleChat(true);
-
-    // 移除欢迎消息
     const welcome = chatMessages.querySelector('.chat-welcome');
     if (welcome) welcome.remove();
 
     if (isDir) {
-        // 目录：获取文件列表，构建 tree
         chatInput.value = `正在获取目录信息...`;
         autoResizeInput();
-
         try {
             const resp = await fetch('/api/files?path=' + encodeURIComponent(path));
             const data = await resp.json();
-
             if (data.error) {
                 chatInput.value = `引用目录失败: ${data.error}`;
                 autoResizeInput();
                 return;
             }
-
             const items = data.items || [];
             const dirs = items.filter(i => i.isDir);
             const files = items.filter(i => !i.isDir);
-
             let tree = `请分析以下目录:\n\n路径: ${path}\n`;
             tree += `共 ${items.length} 项（${dirs.length} 个文件夹 · ${files.length} 个文件）\n\n文件列表:\n`;
-
-            // 先列文件夹，再列文件，各按名称排序
             dirs.sort((a, b) => a.name.localeCompare(b.name));
             files.sort((a, b) => a.name.localeCompare(b.name));
-
             for (const d of dirs) {
                 tree += `  📁 ${d.name}/\n`;
             }
             for (const f of files) {
                 tree += `  📄 ${f.name} (${formatSize(f.size)})\n`;
             }
-
             chatInput.value = tree;
         } catch (e) {
             chatInput.value = `引用目录失败: ${e.message}`;
         }
     } else {
-        // 单文件：直接引用路径
         chatInput.value = `请分析以下文件:\n\n路径: ${path}\n名称: ${name || path.split(/[\\/]/).pop()}`;
     }
-
     autoResizeInput();
     chatInput.focus();
-    // 将光标移到末尾
     chatInput.setSelectionRange(chatInput.value.length, chatInput.value.length);
 }
 
@@ -354,14 +406,14 @@ const cmModelList = document.getElementById('cmModelList');
 const cmModelCount = document.getElementById('cmModelCount');
 const cmStatus = document.getElementById('cmStatus');
 const cmSaveBtn = document.getElementById('cmSaveBtn');
+const cmMyModelsList = document.getElementById('cmMyModelsList');
 
-let cmProviders = [];      // 厂商列表缓存
-let cmFetchedModels = [];  // 已获取的模型列表
+let cmProviders = [];
+let cmFetchedModels = [];
 
 // 打开弹窗
 chatCustomModelBtn.addEventListener('click', async () => {
     customModelModal.classList.remove('hidden');
-    // 加载厂商列表
     if (cmProviders.length === 0) {
         try {
             const resp = await fetch('/api/chat/providers');
@@ -378,25 +430,21 @@ chatCustomModelBtn.addEventListener('click', async () => {
             showCmStatus('加载厂商列表失败: ' + e.message, 'error');
         }
     }
-    // 重置状态
     cmApiKey.value = '';
     cmModelList.innerHTML = '<div class="custom-model-empty">请先获取模型列表</div>';
     cmModelCount.textContent = '';
     cmFetchedModels = [];
-    cmSaveBtn.disabled = true;
+    cmSaveBtn.classList.add('not-ready');
     hideCmStatus();
+    loadMyModels();
 });
 
-// 关闭弹窗
 customModelClose.addEventListener('click', () => customModelModal.classList.add('hidden'));
 cmCancelBtn.addEventListener('click', () => customModelModal.classList.add('hidden'));
-
-// 点击遮罩关闭
 customModelModal.addEventListener('click', e => {
     if (e.target === customModelModal) customModelModal.classList.add('hidden');
 });
 
-// 厂商选择变化时显示描述
 cmProviderSelect.addEventListener('change', () => {
     const provider = cmProviders.find(p => p.id === cmProviderSelect.value);
     if (provider) {
@@ -410,15 +458,8 @@ cmProviderSelect.addEventListener('change', () => {
 cmFetchModelsBtn.addEventListener('click', async () => {
     const provider = cmProviderSelect.value;
     const apiKey = cmApiKey.value.trim();
-
-    if (!provider) {
-        showCmStatus('请先选择厂商', 'error');
-        return;
-    }
-    if (!apiKey) {
-        showCmStatus('请输入 API Key', 'error');
-        return;
-    }
+    if (!provider) { showCmStatus('请先选择厂商', 'error'); return; }
+    if (!apiKey) { showCmStatus('请输入 API Key', 'error'); return; }
 
     cmFetchModelsBtn.disabled = true;
     cmFetchModelsBtn.textContent = '获取中...';
@@ -431,20 +472,17 @@ cmFetchModelsBtn.addEventListener('click', async () => {
             body: JSON.stringify({ provider, api_key: apiKey })
         });
         const data = await resp.json();
-
         if (data.error) {
             showCmStatus(data.error, 'error');
             cmModelList.innerHTML = '<div class="custom-model-empty">获取失败，请检查 API Key</div>';
             cmFetchedModels = [];
             cmModelCount.textContent = '';
-            cmSaveBtn.disabled = true;
+            cmSaveBtn.classList.add('not-ready');
             return;
         }
-
         cmFetchedModels = data.models || [];
         renderCmModelList();
         hideCmStatus();
-
         if (cmFetchedModels.length === 0) {
             showCmStatus('该厂商未返回任何模型', 'error');
         }
@@ -452,108 +490,175 @@ cmFetchModelsBtn.addEventListener('click', async () => {
         showCmStatus('请求失败: ' + e.message, 'error');
         cmFetchedModels = [];
         cmModelCount.textContent = '';
-        cmSaveBtn.disabled = true;
+        cmSaveBtn.classList.add('not-ready');
     } finally {
         cmFetchModelsBtn.disabled = false;
         cmFetchModelsBtn.textContent = '获取模型';
     }
 });
 
-// 渲染模型列表（多选 checkbox）
 function renderCmModelList() {
     if (cmFetchedModels.length === 0) {
         cmModelList.innerHTML = '<div class="custom-model-empty">无可用模型</div>';
         cmModelCount.textContent = '';
-        cmSaveBtn.disabled = true;
+        cmSaveBtn.classList.add('not-ready');
         return;
     }
-
     cmModelCount.textContent = `(${cmFetchedModels.length} 个)`;
     cmModelList.innerHTML = '';
-
     for (const model of cmFetchedModels) {
         const label = document.createElement('label');
         label.className = 'custom-model-item';
-
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = model;
         checkbox.addEventListener('change', updateCmSaveBtn);
-
         const span = document.createElement('span');
         span.className = 'custom-model-item-label';
         span.textContent = model;
-
         label.appendChild(checkbox);
         label.appendChild(span);
         cmModelList.appendChild(label);
     }
-
-    // 默认选中第一个
     const firstCheckbox = cmModelList.querySelector('input[type="checkbox"]');
     if (firstCheckbox) firstCheckbox.checked = true;
     updateCmSaveBtn();
 }
 
-// 更新保存按钮状态
 function updateCmSaveBtn() {
     const checked = cmModelList.querySelectorAll('input[type="checkbox"]:checked');
-    cmSaveBtn.disabled = checked.length === 0;
+    cmSaveBtn.classList.toggle('not-ready', checked.length === 0);
+    console.log('[cmSave] updateCmSaveBtn checked=', checked.length, 'not-ready=', cmSaveBtn.classList.contains('not-ready'));
 }
 
 // 保存配置
 cmSaveBtn.addEventListener('click', async () => {
+    console.log('[cmSave] click 触发, disabled=', cmSaveBtn.disabled);
     const provider = cmProviderSelect.value;
     const apiKey = cmApiKey.value.trim();
     const selectedModels = Array.from(cmModelList.querySelectorAll('input[type="checkbox"]:checked'))
         .map(cb => cb.value);
-
-    if (!provider || !apiKey || selectedModels.length === 0) {
-        showCmStatus('请填写完整信息', 'error');
+    console.log('[cmSave] provider=', provider, 'apiKey长度=', apiKey.length, '选中模型=', selectedModels);
+    // 具体提示缺失项，避免"无响应"
+    if (!provider) {
+        showCmStatus('请先选择厂商', 'error');
         return;
     }
-
+    if (!apiKey) {
+        showCmStatus('请输入 API Key', 'error');
+        return;
+    }
+    if (selectedModels.length === 0) {
+        showCmStatus('请先获取模型并至少勾选一个模型', 'error');
+        return;
+    }
+    // 保存中禁用防重复点击
     cmSaveBtn.disabled = true;
     cmSaveBtn.textContent = '保存中...';
     showCmStatus('正在保存配置...', 'loading');
-
+    console.log('[cmSave] 发起 fetch /api/chat/config/save');
+    let ok = false;
     try {
         const resp = await fetch('/api/chat/config/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                provider,
-                api_key: apiKey,
-                models: selectedModels
-            })
+            body: JSON.stringify({ provider, api_key: apiKey, models: selectedModels })
         });
+        console.log('[cmSave] fetch 响应 status=', resp.status);
         const data = await resp.json();
-
+        console.log('[cmSave] 响应体=', data);
         if (data.error) {
             showCmStatus(data.error, 'error');
-            cmSaveBtn.disabled = false;
-            cmSaveBtn.textContent = '保存';
-            return;
+        } else {
+            ok = true;
+            showCmStatus('配置已保存，正在重新加载...', 'success');
         }
-
-        showCmStatus('配置已保存，正在重新加载...', 'success');
-
-        // 重新初始化聊天界面
-        setTimeout(async () => {
-            await initChat();
-            customModelModal.classList.add('hidden');
-            cmSaveBtn.disabled = false;
-            cmSaveBtn.textContent = '保存';
-        }, 800);
-
     } catch (e) {
+        console.log('[cmSave] fetch 异常:', e);
         showCmStatus('保存失败: ' + e.message, 'error');
+    }
+    // 按钮恢复不依赖 initChat/loadMyModels，避免异步阻塞导致按钮卡死
+    setTimeout(() => {
         cmSaveBtn.disabled = false;
         cmSaveBtn.textContent = '保存';
+        updateCmSaveBtn();
+        console.log('[cmSave] 按钮已恢复');
+    }, ok ? 1000 : 200);
+    // 异步重新加载模型列表与已配置模型，失败不影响按钮
+    if (ok) {
+        setTimeout(() => {
+            console.log('[cmSave] 开始重新加载 initChat/loadMyModels');
+            Promise.all([initChat(), loadMyModels()]).catch((e) => {
+                console.log('[cmSave] 重载异常:', e);
+            });
+        }, 800);
     }
 });
+console.log('[cmSave] click 监听器已绑定到 cmSaveBtn=', cmSaveBtn);
 
-// 状态提示辅助函数
+// 加载已配置的模型列表（用于删除）
+async function loadMyModels() {
+    if (!cmMyModelsList) return;
+    try {
+        const resp = await fetch('/api/chat/config');
+        const data = await resp.json();
+        if (!data.configured || !data.providers) {
+            cmMyModelsList.innerHTML = '<div class="custom-model-empty">暂无已配置的模型</div>';
+            return;
+        }
+        cmMyModelsList.innerHTML = '';
+        for (const p of data.providers) {
+            const icon = getProviderIcon(p.name, p.baseURL);
+            const item = document.createElement('div');
+            item.className = 'cm-my-model-item';
+            const isLimited = p.limited;
+            item.innerHTML = `
+                <span class="chat-model-option-icon" style="background:${icon.bg};color:${icon.color}">${icon.letter}</span>
+                <span class="cm-my-model-name">${p.name}${isLimited ? ' <span class="chat-model-limited">限时</span>' : ''}</span>
+                ${isLimited ? '' : `<button class="cm-my-model-del" data-model="${p.name}" title="删除">✕</button>`}
+            `;
+            cmMyModelsList.appendChild(item);
+        }
+        if (cmMyModelsList.children.length === 0) {
+            cmMyModelsList.innerHTML = '<div class="custom-model-empty">暂无已配置的模型</div>';
+        }
+    } catch (e) {
+        cmMyModelsList.innerHTML = '<div class="custom-model-empty">加载失败</div>';
+    }
+}
+
+// 删除模型
+if (cmMyModelsList) {
+    cmMyModelsList.addEventListener('click', async (e) => {
+    const delBtn = e.target.closest('.cm-my-model-del');
+    if (!delBtn) return;
+    const model = delBtn.dataset.model;
+    if (!confirm(`确定删除模型「${model}」？`)) return;
+    delBtn.disabled = true;
+    delBtn.textContent = '...';
+    try {
+        const resp = await fetch('/api/chat/config/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model })
+        });
+        const data = await resp.json();
+        if (data.error) {
+            alert(data.error);
+            delBtn.disabled = false;
+            delBtn.textContent = '✕';
+            return;
+        }
+        await initChat();
+        await loadMyModels();
+    } catch (e) {
+        alert('删除失败: ' + e.message);
+        delBtn.disabled = false;
+        delBtn.textContent = '✕';
+    }
+});
+}
+
 function showCmStatus(msg, type) {
     cmStatus.textContent = msg;
     cmStatus.className = 'custom-model-status show ' + type;

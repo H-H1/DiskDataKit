@@ -313,6 +313,31 @@ func handleChatClear(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"ok": true})
 }
 
+// handleChatSwitch 切换当前默认模型，同步影响流氓软件检测、启动项分析、缓存分析等功能。
+// POST /api/chat/switch
+// Body: {"model": "deepseek-v4-pro"}
+func handleChatSwitch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var req struct {
+		Model string `json:"model"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "请求格式错误"})
+		return
+	}
+
+	aiMu.Lock()
+	defer aiMu.Unlock()
+	if aiClients == nil || aiClients[req.Model] == nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "模型不存在: " + req.Model})
+		return
+	}
+	aiCurrentProvider = req.Model
+	fmt.Printf("已切换默认模型: %s（流氓软件检测/启动项/缓存分析将使用此模型）\n", aiCurrentProvider)
+	json.NewEncoder(w).Encode(map[string]any{"ok": true, "current": aiCurrentProvider})
+}
+
 // handleChatConfig 返回 AI 配置状态和可用模型列表。
 // GET /api/chat/config
 func handleChatConfig(w http.ResponseWriter, r *http.Request) {
@@ -546,6 +571,74 @@ func handleChatConfigSave(w http.ResponseWriter, r *http.Request) {
 }
 
 // reloadAI 重新读取配置文件并重建 AI 客户端池（基础配置 + 用户配置）。
+
+// handleChatConfigDelete 删除指定模型配置。
+// POST /api/chat/config/delete
+// Body: {"model": "model-name"}
+func handleChatConfigDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var req struct {
+		Model string `json:"model"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "请求格式错误"})
+		return
+	}
+	if req.Model == "" {
+		json.NewEncoder(w).Encode(map[string]any{"error": "缺少 model 参数"})
+		return
+	}
+
+	cfgPath := configFilePath()
+
+	// 读取用户配置
+	var cfg AIConfig
+	if data, err := os.ReadFile(cfgPath); err == nil {
+		_ = json.Unmarshal(data, &cfg)
+	}
+	if cfg.ProvidersModel == nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "配置为空"})
+		return
+	}
+
+	// 检查是否存在于用户配置（非基础配置）
+	if _, ok := cfg.ProvidersModel[req.Model]; !ok {
+		json.NewEncoder(w).Encode(map[string]any{"error": "该模型不在用户配置中，无法删除"})
+		return
+	}
+
+	// 删除模型
+	delete(cfg.ProvidersModel, req.Model)
+
+	// 如果删除的是默认模型，重新选择一个
+	if cfg.Default == req.Model {
+		cfg.Default = ""
+		for name := range cfg.ProvidersModel {
+			cfg.Default = name
+			break
+		}
+	}
+
+	// 写入配置文件
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "序列化配置失败"})
+		return
+	}
+	if err := os.WriteFile(cfgPath, data, 0644); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "写入配置文件失败"})
+		return
+	}
+
+	// 热重载
+	reloadAI()
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"ok":      true,
+		"message": "已删除模型: " + req.Model,
+	})
+}
 func reloadAI() {
 	initAI()
 }
