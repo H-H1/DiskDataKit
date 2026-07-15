@@ -139,6 +139,7 @@ func main() {
 	http.HandleFunc("/api/track/add", handleTrackAdd)
 	http.HandleFunc("/api/track/remove", handleTrackRemove)
 	http.HandleFunc("/api/track/refresh", handleTrackRefresh)
+	http.HandleFunc("/api/system/open", handleSystemOpen)
 
 	// 初始化 DeepSeek AI 客户端
 	initAI()
@@ -894,4 +895,46 @@ func writeErr(w http.ResponseWriter, path string, err error) {
 		Path: path,
 		Err:  err.Error(),
 	})
+}
+
+// handleSystemOpen 启动系统设置界面（Windows ms-settings 协议或系统工具）。
+func handleSystemOpen(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	target := r.URL.Query().Get("target")
+
+	// uri 非空时通过 explorer 打开协议；exe 非空时直接启动可执行文件
+	var uri, exe string
+	switch target {
+	case "apps":
+		uri = "ms-settings:appsfeatures"
+	case "startup":
+		uri = "ms-settings:startupapps"
+	case "storage":
+		uri = "ms-settings:storagesense"
+	case "diskcleanup":
+		exe = "cleanmgr.exe"
+	default:
+		json.NewEncoder(w).Encode(map[string]any{"error": "未知的目标: " + target})
+		return
+	}
+
+	var cmd *exec.Cmd
+	switch {
+	case isWindows:
+		if exe != "" {
+			cmd = exec.Command(exe)
+		} else {
+			cmd = exec.Command("explorer.exe", uri)
+		}
+	case isDarwin:
+		cmd = exec.Command("open", uri)
+	default:
+		cmd = exec.Command("xdg-open", uri)
+	}
+	if err := cmd.Start(); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+	cmd.Process.Release()
+	json.NewEncoder(w).Encode(map[string]any{"ok": true})
 }

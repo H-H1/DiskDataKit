@@ -1349,7 +1349,7 @@ body {
     right: 0;
     bottom: 0;
     width: 400px;
-    z-index: 150;
+    z-index: 500;
     background: var(--bg-1);
     border-left: 1px solid var(--border-strong);
     display: flex;
@@ -2438,6 +2438,11 @@ body {
     overflow-y: auto;
 }
 
+/* 自定义模型弹窗从聊天侧边栏打开，需高于侧边栏 */
+#customModelModal {
+    z-index: 600;
+}
+
 .custom-model-field {
     margin-bottom: 16px;
 }
@@ -2616,6 +2621,49 @@ body {
 }
 
 /* ==================== 自定义模型下拉菜单 ==================== */
+
+.header-model-dropdown {
+    position: relative;
+}
+
+.header-model-trigger {
+    padding: 5px 10px !important;
+    gap: 6px !important;
+}
+
+.header-model-label {
+    font-size: 12px;
+    color: var(--fg-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+    position: relative;
+    z-index: 1;
+}
+
+.header-model-options {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 220px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--surface-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 300;
+    padding: 4px;
+}
+
+.header-model-trigger.open {
+    border-color: var(--accent);
+}
+
+.header-model-trigger.open .chat-model-chevron {
+    transform: rotate(180deg);
+}
 
 .chat-model-dropdown {
     position: relative;
@@ -3345,5 +3393,75 @@ body {
 /* 选中文本 */
 ::selection {
     background: var(--accent-subtle);
+    color: var(--accent);
+}
+
+/* ==================== 系统管理 ==================== */
+.system-box {
+    max-width: 460px;
+    width: 90vw;
+}
+
+.system-launch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.system-launch-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: var(--bg-2, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border);
+    color: var(--fg-default);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s var(--ease);
+}
+
+.system-launch-item:hover {
+    border-color: rgba(78, 224, 208, 0.35);
+    background: rgba(78, 224, 208, 0.06);
+    transform: translateX(2px);
+}
+
+.system-launch-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.system-launch-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.system-launch-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.system-launch-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg-bright);
+    margin-bottom: 2px;
+}
+
+.system-launch-desc {
+    font-size: 12px;
+    color: var(--fg-muted);
+}
+
+.system-launch-arrow {
+    color: var(--fg-muted);
+    flex-shrink: 0;
+    transition: color 0.2s var(--ease);
+}
+
+.system-launch-item:hover .system-launch-arrow {
     color: var(--accent);
 }

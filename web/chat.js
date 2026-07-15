@@ -13,6 +13,14 @@ const chatModelIcon = document.getElementById('chatModelIcon');
 const chatModelOptions = document.getElementById('chatModelOptions');
 const chatModelDropdown = document.getElementById('chatModelDropdown');
 
+// 顶栏模型切换
+const headerModelTrigger = document.getElementById('headerModelTrigger');
+const headerModelLabel = document.getElementById('headerModelLabel');
+const headerModelIcon = document.getElementById('headerModelIcon');
+const headerModelOptions = document.getElementById('headerModelOptions');
+const headerModelDropdown = document.getElementById('headerModelDropdown');
+const headerCustomModelBtn = document.getElementById('headerCustomModelBtn');
+
 let chatSessionID = 'session-' + Date.now();
 let chatSending = false;
 let chatCurrentModel = '';
@@ -87,6 +95,7 @@ async function initChat() {
 
         // 构建自定义下拉列表
         chatModelOptions.innerHTML = '';
+        headerModelOptions.innerHTML = '';
         let currentProvider = null;
         if (data.providers) {
             for (const p of data.providers) {
@@ -103,6 +112,12 @@ async function initChat() {
                     selectModel(p.name, p.limited);
                 });
                 chatModelOptions.appendChild(item);
+                // 顶栏下拉同步
+                const hItem = item.cloneNode(true);
+                hItem.addEventListener('click', () => {
+                    selectModel(p.name, p.limited);
+                });
+                headerModelOptions.appendChild(hItem);
                 if (p.name === data.currentProvider) currentProvider = p;
             }
         }
@@ -110,13 +125,21 @@ async function initChat() {
         // 设置当前选中
         if (currentProvider) {
             chatCurrentModel = currentProvider.name;
-            chatModelLabel.textContent = currentProvider.name + (currentProvider.limited ? ' (限时)' : '');
+            const labelText = currentProvider.name + (currentProvider.limited ? ' (限时)' : '');
+            chatModelLabel.textContent = labelText;
             const icon = getProviderIcon(currentProvider.name, currentProvider.baseURL);
             chatModelIcon.textContent = icon.letter;
             chatModelIcon.style.background = icon.bg;
             chatModelIcon.style.color = icon.color;
             chatStatus.textContent = currentProvider.name;
             chatStatus.classList.toggle('limited', !!currentProvider.limited);
+            // 顶栏同步
+            headerModelLabel.textContent = labelText;
+            headerModelIcon.textContent = icon.letter;
+            headerModelIcon.style.background = icon.bg;
+            headerModelIcon.style.color = icon.color;
+        } else if (!data.configured) {
+            headerModelLabel.textContent = '未配置';
         }
     } catch (e) {
         // 忽略
@@ -126,20 +149,34 @@ async function initChat() {
 // 选择模型
 function selectModel(name, limited) {
     chatCurrentModel = name;
+    const labelText = name + (limited ? ' (限时)' : '');
     const selectedItem = chatModelOptions.querySelector(`.chat-model-option[data-value="${name}"]`);
     if (selectedItem) {
         const iconEl = selectedItem.querySelector('.chat-model-option-icon');
-        chatModelLabel.textContent = name + (limited ? ' (限时)' : '');
+        chatModelLabel.textContent = labelText;
         chatModelIcon.textContent = iconEl.textContent;
         chatModelIcon.style.background = iconEl.style.background;
         chatModelIcon.style.color = iconEl.style.color;
         chatModelOptions.querySelectorAll('.chat-model-option').forEach(el => el.classList.remove('active'));
         selectedItem.classList.add('active');
     }
+    // 顶栏同步
+    const hItem = headerModelOptions.querySelector(`.chat-model-option[data-value="${name}"]`);
+    if (hItem) {
+        const iconEl = hItem.querySelector('.chat-model-option-icon');
+        headerModelLabel.textContent = labelText;
+        headerModelIcon.textContent = iconEl.textContent;
+        headerModelIcon.style.background = iconEl.style.background;
+        headerModelIcon.style.color = iconEl.style.color;
+        headerModelOptions.querySelectorAll('.chat-model-option').forEach(el => el.classList.remove('active'));
+        hItem.classList.add('active');
+    }
     chatStatus.textContent = name;
     chatStatus.classList.toggle('limited', !!limited);
     chatModelOptions.classList.add('hidden');
     chatModelTrigger.classList.remove('open');
+    headerModelOptions.classList.add('hidden');
+    headerModelTrigger.classList.remove('open');
     // 同步切换后端默认模型，让流氓软件检测/启动项分析/缓存分析也使用此模型
     fetch('/api/chat/switch', {
         method: 'POST',

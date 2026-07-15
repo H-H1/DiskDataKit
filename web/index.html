@@ -41,6 +41,17 @@
                     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.011a.25.25 0 0 1 .25.25v3.011a.25.25 0 0 1-.427.177l-1.38-1.38A7 7 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.49 5.49 0 0 0-4.388 2.196l1.204 1.204a.25.25 0 0 1-.177.427H1.628a.25.25 0 0 1-.25-.25V2.066a.25.25 0 0 1 .427-.177l1.38 1.38A7 7 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"></path></svg>
                     <span class="btn-label">刷新</span>
                 </button>
+                <div id="headerModelDropdown" class="header-model-dropdown">
+                    <button id="headerModelTrigger" class="btn btn-ghost header-model-trigger" title="切换模型">
+                        <span id="headerModelIcon" class="chat-model-icon"></span>
+                        <span id="headerModelLabel" class="header-model-label">加载中...</span>
+                        <svg class="chat-model-chevron" viewBox="0 0 10 6" fill="currentColor"><path d="M5 6L0 0h10z"></path></svg>
+                    </button>
+                    <div id="headerModelOptions" class="header-model-options hidden"></div>
+                </div>
+                <button id="headerCustomModelBtn" class="btn btn-ghost" title="自定义模型">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
+                </button>
                 <button id="chatToggleHeaderBtn" class="btn btn-ghost" title="AI 助手">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM4.5 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm5 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-1.5 4.5a3 3 0 0 1-2.5-1.34.5.5 0 0 1 .83-.55A2 2 0 0 0 8 10a2 2 0 0 0 1.67-.89.5.5 0 1 1 .83.55 3 3 0 0 1-2.5 1.34Z"/></svg>
                     <span class="btn-label">AI</span>
@@ -90,6 +101,11 @@
                     <span class="home-card-icon">📊</span>
                     <span class="home-card-title">文件夹追踪</span>
                     <span class="home-card-desc">追踪文件夹大小变化，对比新增、删除、变化的文件</span>
+                </button>
+                <button class="home-card" id="homeSystemBtn">
+                    <span class="home-card-icon">🖥️</span>
+                    <span class="home-card-title">系统管理</span>
+                    <span class="home-card-desc">启动系统设置界面，管理应用与功能、开机启动项</span>
                 </button>
             </div>
             <div class="home-section">
@@ -288,6 +304,51 @@
             </div>
         </div>
 
+        <!-- 系统管理弹窗 -->
+        <div id="systemModal" class="modal-overlay hidden">
+            <div class="modal-box system-box">
+                <div class="cleanup-header">
+                    <span class="modal-title">系统管理</span>
+                    <button id="systemClose" class="expand-close" title="关闭">×</button>
+                </div>
+                <p class="modal-desc">点击启动对应的系统设置界面</p>
+                <div class="system-launch-list">
+                    <button class="system-launch-item" data-target="apps">
+                        <span class="system-launch-icon">📦</span>
+                        <div class="system-launch-info">
+                            <div class="system-launch-title">应用和功能</div>
+                            <div class="system-launch-desc">管理已安装的应用程序</div>
+                        </div>
+                        <svg class="system-launch-arrow" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg>
+                    </button>
+                    <button class="system-launch-item" data-target="startup">
+                        <span class="system-launch-icon">🚀</span>
+                        <div class="system-launch-info">
+                            <div class="system-launch-title">开机启动项</div>
+                            <div class="system-launch-desc">管理登录时自动启动的应用</div>
+                        </div>
+                        <svg class="system-launch-arrow" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg>
+                    </button>
+                    <button class="system-launch-item" data-target="diskcleanup">
+                        <span class="system-launch-icon">🧽</span>
+                        <div class="system-launch-info">
+                            <div class="system-launch-title">磁盘清理</div>
+                            <div class="system-launch-desc">清理磁盘上的临时文件和不需要的文件</div>
+                        </div>
+                        <svg class="system-launch-arrow" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg>
+                    </button>
+                    <button class="system-launch-item" data-target="storage">
+                        <span class="system-launch-icon">💾</span>
+                        <div class="system-launch-info">
+                            <div class="system-launch-title">存储感知</div>
+                            <div class="system-launch-desc">自动清理临时文件并管理存储空间</div>
+                        </div>
+                        <svg class="system-launch-arrow" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <section id="fileCard" class="card glass file-card hidden">
             <div class="card-header">
                 <div class="title-group">
@@ -439,5 +500,6 @@
     <script src="scan.js"></script>
     <script src="cache.js"></script>
     <script src="track.js"></script>
+    <script src="system.js"></script>
 </body>
 </html>
