@@ -3498,3 +3498,104 @@ body {
 .system-launch-item:hover .system-launch-arrow {
     color: var(--accent);
 }
+
+/* ========== 管理员权限状态按钮 ========== */
+.admin-status-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s var(--ease);
+}
+
+.admin-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.admin-yes .admin-status-dot {
+    background: #c8a45c;
+    box-shadow: 0 0 6px rgba(200, 164, 92, 0.5);
+}
+
+.admin-yes {
+    color: #c8a45c;
+    border: 1px solid rgba(200, 164, 92, 0.2);
+}
+
+.admin-no .admin-status-dot {
+    background: #e0a030;
+    box-shadow: 0 0 6px rgba(224, 160, 48, 0.4);
+}
+
+.admin-no {
+    color: #e0a030;
+    border: 1px solid rgba(224, 160, 48, 0.2);
+}
+
+.admin-unknown .admin-status-dot {
+    background: var(--fg-subtle);
+}
+
+.admin-unknown {
+    color: var(--fg-muted);
+}
+
+/* ========== Toast 气泡通知 ========== */
+.toast-container {
+    position: fixed;
+    top: 64px;
+    right: 24px;
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+    color: var(--fg-default);
+    max-width: 380px;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+    pointer-events: auto;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.toast-warn {
+    border-color: rgba(224, 160, 48, 0.3);
+}
+
+.toast-warn .toast-icon {
+    color: #e0a030;
+}
+
+.toast-info .toast-icon {
+    color: var(--accent);
+}

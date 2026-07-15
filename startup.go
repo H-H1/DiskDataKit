@@ -210,16 +210,20 @@ func translateStartupNames(items []StartupItem) {
 		return
 	}
 
-	// 初始化日志文件
-	logFile := filepath.Join("log", "startup.log")
-	if err := os.MkdirAll("log", 0755); err != nil {
-		log.Printf("创建日志目录失败: %v", err)
-	}
-	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Printf("打开日志文件失败: %v", err)
-	} else {
-		defer logger.Close()
+	// 初始化日志文件（仅开发模式）
+	var logger *os.File
+	if devMode {
+		logFile := filepath.Join("log", "startup.log")
+		if err := os.MkdirAll("log", 0755); err != nil {
+			log.Printf("创建日志目录失败: %v", err)
+		}
+		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Printf("打开日志文件失败: %v", err)
+		} else {
+			logger = f
+			defer logger.Close()
+		}
 	}
 	var logMu sync.Mutex
 	writeLog := func(format string, args ...any) {

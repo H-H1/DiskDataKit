@@ -5,3 +5,5 @@ ai_config.json
 test
 DiskDataKit
 *.exe*
+DiskDataKit-darwin-amd64
+DiskDataKit-linux-amd64

@@ -359,16 +359,20 @@ func scanEntrySizes(entries []CacheEntry) {
 // prompt 中会载入注册表已安装软件列表作为参考，提高识别准确率。
 // 每批的请求上下文、响应内容和耗时记录到 log/cache.log。
 func aiIdentifyCache(entries []CacheEntry) {
-	// 初始化日志文件
-	logFile := filepath.Join("log", "cache.log")
-	if err := os.MkdirAll("log", 0755); err != nil {
-		log.Printf("创建日志目录失败: %v", err)
-	}
-	logger, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Printf("打开日志文件失败: %v", err)
-	} else {
-		defer logger.Close()
+	// 初始化日志文件（仅开发模式）
+	var logger *os.File
+	if devMode {
+		logFile := filepath.Join("log", "cache.log")
+		if err := os.MkdirAll("log", 0755); err != nil {
+			log.Printf("创建日志目录失败: %v", err)
+		}
+		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Printf("打开日志文件失败: %v", err)
+		} else {
+			logger = f
+			defer logger.Close()
+		}
 	}
 	var logMu sync.Mutex
 	writeLog := func(format string, args ...any) {

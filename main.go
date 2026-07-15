@@ -71,6 +71,10 @@ var (
 	isMobile  = isIOS || isAndroid
 )
 
+// devMode 为 true 时启用日志文件写入（startup.log / cache.log）。
+// 通过环境变量 DEV=1 启动时开启，默认关闭。
+var devMode = os.Getenv("DEV") == "1"
+
 // 文件大小缓存管理器，启动时加载，运行时更新。
 var sizeCache *SizeCache
 
@@ -82,10 +86,10 @@ var trackStore *TrackStore
 
 func main() {
 	// 非管理员/root 则自动提权重启（Windows UAC / macOS osascript / Linux pkexec）
-	// if !isAdmin() {
-	// 	elevate()
-	// 	return
-	// }
+	if !isAdmin() {
+		elevate()
+		// return
+	}
 	fmt.Printf("DiskDataKit 已启动 | 系统: %s\n", goos)
 	var err error
 	sizeCache, err = NewSizeCache(cacheFilePath())
@@ -140,6 +144,7 @@ func main() {
 	http.HandleFunc("/api/track/remove", handleTrackRemove)
 	http.HandleFunc("/api/track/refresh", handleTrackRefresh)
 	http.HandleFunc("/api/system/open", handleSystemOpen)
+	http.HandleFunc("/api/admin/status", handleAdminStatus)
 
 	// 初始化 DeepSeek AI 客户端
 	initAI()
@@ -916,6 +921,14 @@ func writeErr(w http.ResponseWriter, path string, err error) {
 	json.NewEncoder(w).Encode(listResponse{
 		Path: path,
 		Err:  err.Error(),
+	})
+}
+
+// handleAdminStatus 返回当前是否以管理员权限运行。
+func handleAdminStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(map[string]any{
+		"admin": isAdmin(),
 	})
 }
 

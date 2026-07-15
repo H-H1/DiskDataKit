@@ -76,9 +76,8 @@ type AIProviderCfg struct {
 	BaseURL string   `json:"base_url"`
 }
 
-// initAI 从配置文件读取多模型 API Key，初始化客户端池。
-// 加载顺序: 先加载基础配置（可执行文件旁的 ai_config.json 或 ai_config.example.json，标记为限时），
-// 再叠加用户配置（%LOCALAPPDATA%\DiskDataKit\ai_config.json），用户配置覆盖同名基础模型。
+// initAI 初始化 AI 客户端池。
+// 基础配置已内置到代码中，用户配置（%LOCALAPPDATA%\DiskDataKit\ai_config.json）可覆盖同名模型。
 func initAI() {
 	aiMu.Lock()
 	defer aiMu.Unlock()
@@ -92,31 +91,30 @@ func initAI() {
 	merged.ProvidersModel = make(map[string]AIProviderCfg)
 	merged.SystemPrompt = defaultPrompt
 
-	// 1. 加载基础配置（可执行文件旁）
-	exePath, _ := os.Executable()
-	exeDir := filepath.Dir(exePath)
-	basePath := filepath.Join(exeDir, "ai_config.json")
-	baseData, baseErr := os.ReadFile(basePath)
-	if baseErr != nil {
-		// 回退到 example 文件
-		basePath = filepath.Join(exeDir, "ai_config.example.json")
-		baseData, baseErr = os.ReadFile(basePath)
+	// 1. 内置基础配置（原 ai_config.json 的值，直接写入代码）
+	baseCfg := AIConfig{
+		Default:      "deepseek-v4-pro",
+		SystemPrompt: defaultPrompt,
+		ProvidersModel: map[string]AIProviderCfg{
+			"deepseek-v4-pro": {
+				Keys:    []string{"sk-bb2a9e34031644dab942763e1920151d"},
+				BaseURL: "https://api.deepseek.com",
+			},
+			"deepseek-v4-flash": {
+				Keys:    []string{"sk-bb2a9e34031644dab942763e1920151d"},
+				BaseURL: "https://api.deepseek.com",
+			},
+		},
 	}
-	if baseErr == nil {
-		var baseCfg AIConfig
-		if json.Unmarshal(baseData, &baseCfg) == nil {
-			if baseCfg.SystemPrompt != "" {
-				merged.SystemPrompt = baseCfg.SystemPrompt
-			}
-			for name, pcfg := range baseCfg.ProvidersModel {
-				merged.ProvidersModel[name] = pcfg
-				baseModelNames[name] = true
-			}
-			if baseCfg.Default != "" {
-				merged.Default = baseCfg.Default
-			}
-			fmt.Println("已加载基础配置（限时）:", basePath)
-		}
+	if baseCfg.SystemPrompt != "" {
+		merged.SystemPrompt = baseCfg.SystemPrompt
+	}
+	for name, pcfg := range baseCfg.ProvidersModel {
+		merged.ProvidersModel[name] = pcfg
+		baseModelNames[name] = true
+	}
+	if baseCfg.Default != "" {
+		merged.Default = baseCfg.Default
 	}
 
 	// 2. 加载用户配置（%LOCALAPPDATA%），覆盖同名基础模型

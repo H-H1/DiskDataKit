@@ -1416,3 +1416,54 @@ document.getElementById('upBtn').onclick = () => {
 loadDrives().then(() => {
     showHome();
 });
+
+// ========== 管理员权限状态检查 ==========
+async function checkAdminStatus() {
+    const btn = document.getElementById('adminStatusBtn');
+    const dot = btn.querySelector('.admin-status-dot');
+    const txt = btn.querySelector('.admin-status-text');
+    try {
+        const resp = await fetch('/api/admin/status');
+        const data = await resp.json();
+        if (data.admin) {
+            btn.className = 'btn btn-ghost admin-status-btn admin-yes';
+            dot.className = 'admin-status-dot';
+            txt.textContent = '管理员';
+            btn.title = '当前以管理员权限运行';
+        } else {
+            btn.className = 'btn btn-ghost admin-status-btn admin-no';
+            dot.className = 'admin-status-dot';
+            txt.textContent = '非管理员';
+            btn.title = '当前非管理员模式，部分功能受限';
+            showToast('当前不是管理员模式启动，部分功能将无法使用', 'warn');
+        }
+    } catch (e) {
+        btn.className = 'btn btn-ghost admin-status-btn admin-unknown';
+        txt.textContent = '权限';
+        btn.title = '无法获取权限状态';
+    }
+}
+
+// ========== Toast 气泡通知 ==========
+function showToast(msg, type = 'info') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = `<span class="toast-icon">${type === 'warn' ? '⚠' : 'ℹ'}</span><span class="toast-msg">${msg}</span>`;
+    container.appendChild(toast);
+    // 触发动画
+    requestAnimationFrame(() => toast.classList.add('show'));
+    // 5 秒后移除
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, 5000);
+}
+
+checkAdminStatus();
