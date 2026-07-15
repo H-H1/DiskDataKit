@@ -7,3 +7,4 @@ DiskDataKit
 *.exe*
 DiskDataKit-darwin-amd64
 DiskDataKit-linux-amd64
+*.log

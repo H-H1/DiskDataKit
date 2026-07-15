@@ -97,11 +97,11 @@ func initAI() {
 		SystemPrompt: defaultPrompt,
 		ProvidersModel: map[string]AIProviderCfg{
 			"deepseek-v4-pro": {
-				Keys:    []string{"sk-bb2a9e34031644dab942763e1920151d"},
+				Keys:    []string{"sk-903626bbe0df4f34b631d313dab375a0"},
 				BaseURL: "https://api.deepseek.com",
 			},
 			"deepseek-v4-flash": {
-				Keys:    []string{"sk-bb2a9e34031644dab942763e1920151d"},
+				Keys:    []string{"sk-903626bbe0df4f34b631d313dab375a0"},
 				BaseURL: "https://api.deepseek.com",
 			},
 		},
