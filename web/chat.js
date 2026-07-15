@@ -25,15 +25,15 @@ let chatSessionID = 'session-' + Date.now();
 let chatSending = false;
 let chatCurrentModel = '';
 
-// 厂商图标映射
+// 厂商图标映射 — 统一暖金色调
 const providerIcons = {
-    deepseek:   { letter: 'D', color: '#4D6BFE', bg: 'rgba(77, 107, 254, 0.15)' },
-    alibaba:    { letter: 'Q', color: '#615CED', bg: 'rgba(97, 92, 237, 0.15)' },
-    bytedance:  { letter: 'B', color: '#325AB4', bg: 'rgba(50, 90, 180, 0.15)' },
-    zhipu:      { letter: 'Z', color: '#1A73E8', bg: 'rgba(26, 115, 232, 0.15)' },
-    minimax:    { letter: 'M', color: '#FF6B35', bg: 'rgba(255, 107, 53, 0.15)' },
-    xiaomi:     { letter: 'X', color: '#FF6900', bg: 'rgba(255, 105, 0, 0.15)' },
-    unknown:    { letter: 'AI', color: '#4EE0D0', bg: 'rgba(78, 224, 208, 0.15)' },
+    deepseek:   { letter: 'D', color: '#c8a45c', bg: 'rgba(200, 164, 92, 0.15)' },
+    alibaba:    { letter: 'Q', color: '#d4b06a', bg: 'rgba(212, 176, 106, 0.15)' },
+    bytedance:  { letter: 'B', color: '#b8954a', bg: 'rgba(184, 149, 74, 0.15)' },
+    zhipu:      { letter: 'Z', color: '#d4b06a', bg: 'rgba(212, 176, 106, 0.15)' },
+    minimax:    { letter: 'M', color: '#b8954a', bg: 'rgba(184, 149, 74, 0.15)' },
+    xiaomi:     { letter: 'X', color: '#d4b06a', bg: 'rgba(212, 176, 106, 0.15)' },
+    unknown:    { letter: 'AI', color: '#c8a45c', bg: 'rgba(200, 164, 92, 0.15)' },
 };
 
 function getProviderByBaseURL(baseURL) {

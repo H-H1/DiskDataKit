@@ -578,7 +578,7 @@ function drawLine(points, progress, color, glowColor) {
     // 圆点
     for (let i = 0; i < drawCount; i++) {
         const p = points[i];
-        chartCtx.fillStyle = '#0c0e13';
+        chartCtx.fillStyle = '#0a0a0c';
         chartCtx.beginPath();
         chartCtx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
         chartCtx.fill();
@@ -632,7 +632,7 @@ function drawPareto(progress) {
         chartCtx.moveTo(ml, y);
         chartCtx.lineTo(W - mr, y);
         chartCtx.stroke();
-        chartCtx.fillStyle = '#5c626e';
+        chartCtx.fillStyle = '#555560';
         chartCtx.fillText(formatSize(val), ml - 8, y);
     }
 
@@ -641,7 +641,7 @@ function drawPareto(progress) {
     for (let g = 0; g <= gridLines; g++) {
         const y = mt + ch - (ch * g / gridLines);
         const pct = (g / gridLines * 100);
-        chartCtx.fillStyle = '#5c626e';
+        chartCtx.fillStyle = '#555560';
         chartCtx.fillText(pct.toFixed(0) + '%', W - mr + 8, y);
     }
 
@@ -675,18 +675,18 @@ function drawPareto(progress) {
         // 条形渐变
         const grad = chartCtx.createLinearGradient(0, mt + ch - barH, 0, mt + ch);
         if (isHover) {
-            grad.addColorStop(0, `rgba(78, 224, 208, ${fadeFactor})`);
-            grad.addColorStop(0.7, `rgba(78, 224, 208, ${fadeFactor * 0.5})`);
-            grad.addColorStop(1, `rgba(78, 224, 208, ${fadeFactor * 0.1})`);
+            grad.addColorStop(0, `rgba(200, 164, 92, ${fadeFactor})`);
+            grad.addColorStop(0.7, `rgba(200, 164, 92, ${fadeFactor * 0.5})`);
+            grad.addColorStop(1, `rgba(200, 164, 92, ${fadeFactor * 0.1})`);
         } else {
-            grad.addColorStop(0, `rgba(78, 224, 208, ${fadeFactor * 0.85})`);
-            grad.addColorStop(0.7, `rgba(78, 224, 208, ${fadeFactor * 0.35})`);
-            grad.addColorStop(1, `rgba(78, 224, 208, ${fadeFactor * 0.08})`);
+            grad.addColorStop(0, `rgba(200, 164, 92, ${fadeFactor * 0.85})`);
+            grad.addColorStop(0.7, `rgba(200, 164, 92, ${fadeFactor * 0.35})`);
+            grad.addColorStop(1, `rgba(200, 164, 92, ${fadeFactor * 0.08})`);
         }
         chartCtx.fillStyle = grad;
 
         if (isHover) {
-            chartCtx.shadowColor = 'rgba(78, 224, 208, 0.5)';
+            chartCtx.shadowColor = 'rgba(200, 164, 92, 0.5)';
             chartCtx.shadowBlur = 12;
         }
         chartCtx.fillRect(x, y, barW, animH);
@@ -706,7 +706,7 @@ function drawPareto(progress) {
             chartCtx.font = `600 ${fontSize}px "Segoe UI", system-ui, sans-serif`;
             chartCtx.textAlign = 'center';
             chartCtx.textBaseline = 'bottom';
-            chartCtx.fillStyle = `rgba(78, 224, 208, ${fadeFactor})`;
+            chartCtx.fillStyle = `rgba(200, 164, 92, ${fadeFactor})`;
             chartCtx.fillText(label, x + barW / 2, y - 2);
             chartCtx.restore();
         }
@@ -728,21 +728,21 @@ function drawPareto(progress) {
     if (progress > 0.55) {
         const lineProgress = Math.min(1, (progress - 0.55) / 0.45);
 
-        // 自身占比线（紫色）
+        // 自身占比线（金色亮调）
         if (showSelfLine && selfPoints.length > 0) {
-            drawLine(selfPoints, lineProgress, '#c084fc', 'rgba(192, 132, 252, 0.4)');
+            drawLine(selfPoints, lineProgress, '#e0c489', 'rgba(224, 196, 137, 0.4)');
         }
 
-        // 累计百分比线（蓝色）
+        // 累计百分比线（金色暗调）
         if (showCumulativeLine && linePoints.length > 0) {
-            drawLine(linePoints, lineProgress, '#5b9eff', 'rgba(91, 158, 255, 0.4)');
+            drawLine(linePoints, lineProgress, '#c8a45c', 'rgba(200, 164, 92, 0.4)');
         }
     }
 
     // ---- 80% 参考线 ----
     if (progress > 0.8) {
         const y80 = mt + ch - 0.8 * ch;
-        chartCtx.strokeStyle = 'rgba(255, 107, 107, 0.25)';
+        chartCtx.strokeStyle = 'rgba(224, 85, 85, 0.25)';
         chartCtx.lineWidth = 1;
         chartCtx.setLineDash([4, 4]);
         chartCtx.beginPath();
@@ -752,7 +752,7 @@ function drawPareto(progress) {
         chartCtx.setLineDash([]);
         chartCtx.font = '10px ui-monospace, monospace';
         chartCtx.textAlign = 'left';
-        chartCtx.fillStyle = 'rgba(255, 107, 107, 0.5)';
+        chartCtx.fillStyle = 'rgba(224, 85, 85, 0.5)';
         chartCtx.fillText('80%', ml + 4, y80 - 6);
     }
 
@@ -767,7 +767,7 @@ function drawPareto(progress) {
         const x = ml + i * slot + slot / 2;
         let label = d.name;
         if (label.length > 8) label = label.slice(0, 7) + '…';
-        chartCtx.fillStyle = i < 5 ? '#8b909a' : '#5c626e';
+        chartCtx.fillStyle = i < 5 ? '#828590' : '#555560';
         chartCtx.fillText(label, x, mt + ch + 6);
     }
 }
@@ -801,8 +801,7 @@ function handleChartHover(e) {
 
         let html = `<div class="tt-name">${d.name}</div>` +
             `<div class="tt-size">大小: ${formatSize(d.size)}</div>`;
-        if (showSelfLine) html += `<div class="tt-pct" style="color:#c084fc">自身: ${pct}%</div>`;
-        if (showCumulativeLine) html += `<div class="tt-pct">累计: ${cumPct}%</div>`;
+        if (showSelfLine) html += `<div class="tt-pct" style="color:#e0c489">自身: ${pct}%</div>`;        if (showCumulativeLine) html += `<div class="tt-pct">累计: ${cumPct}%</div>`;
         // "其他"条提示可点击展开
         if (d.name.startsWith('其他')) {
             html += `<div class="tt-pct" style="color:var(--accent);margin-top:4px">点击展开详情 →</div>`;
@@ -1028,8 +1027,7 @@ expandCanvas.addEventListener('mousemove', e => {
 
         let html = `<div class="tt-name">${d.name}</div>` +
             `<div class="tt-size">大小: ${formatSize(d.size)}</div>`;
-        if (showSelfLine) html += `<div class="tt-pct" style="color:#c084fc">自身: ${pct}%</div>`;
-        if (showCumulativeLine) html += `<div class="tt-pct">累计: ${cumPct}%</div>`;
+        if (showSelfLine) html += `<div class="tt-pct" style="color:#e0c489">自身: ${pct}%</div>`;        if (showCumulativeLine) html += `<div class="tt-pct">累计: ${cumPct}%</div>`;
         expandTooltip.innerHTML = html;
         expandTooltip.style.left = mx + 'px';
         expandTooltip.style.top = (my + 14) + 'px';
@@ -1142,7 +1140,7 @@ function drawExpanded(progress) {
         expandCtx.moveTo(ml, y);
         expandCtx.lineTo(W - mr, y);
         expandCtx.stroke();
-        expandCtx.fillStyle = '#5c626e';
+        expandCtx.fillStyle = '#555560';
         expandCtx.fillText(formatSize(val), ml - 8, y);
     }
 
@@ -1150,7 +1148,7 @@ function drawExpanded(progress) {
     expandCtx.textAlign = 'left';
     for (let g = 0; g <= gridLines; g++) {
         const y = mt + ch - (ch * g / gridLines);
-        expandCtx.fillStyle = '#5c626e';
+        expandCtx.fillStyle = '#555560';
         expandCtx.fillText((g / gridLines * 100).toFixed(0) + '%', W - mr + 8, y);
     }
 
@@ -1179,18 +1177,18 @@ function drawExpanded(progress) {
 
         const grad = expandCtx.createLinearGradient(0, mt + ch - barH, 0, mt + ch);
         if (isHover) {
-            grad.addColorStop(0, `rgba(192, 132, 252, ${fadeFactor})`);
-            grad.addColorStop(0.7, `rgba(192, 132, 252, ${fadeFactor * 0.5})`);
-            grad.addColorStop(1, `rgba(192, 132, 252, ${fadeFactor * 0.1})`);
+            grad.addColorStop(0, `rgba(200, 164, 92, ${fadeFactor})`);
+            grad.addColorStop(0.7, `rgba(200, 164, 92, ${fadeFactor * 0.5})`);
+            grad.addColorStop(1, `rgba(200, 164, 92, ${fadeFactor * 0.1})`);
         } else {
-            grad.addColorStop(0, `rgba(192, 132, 252, ${fadeFactor * 0.85})`);
-            grad.addColorStop(0.7, `rgba(192, 132, 252, ${fadeFactor * 0.35})`);
-            grad.addColorStop(1, `rgba(192, 132, 252, ${fadeFactor * 0.08})`);
+            grad.addColorStop(0, `rgba(200, 164, 92, ${fadeFactor * 0.85})`);
+            grad.addColorStop(0.7, `rgba(200, 164, 92, ${fadeFactor * 0.35})`);
+            grad.addColorStop(1, `rgba(200, 164, 92, ${fadeFactor * 0.08})`);
         }
         expandCtx.fillStyle = grad;
 
         if (isHover) {
-            expandCtx.shadowColor = 'rgba(192, 132, 252, 0.5)';
+            expandCtx.shadowColor = 'rgba(200, 164, 92, 0.5)';
             expandCtx.shadowBlur = 12;
         }
         expandCtx.fillRect(x, y, barW, animH);
@@ -1209,7 +1207,7 @@ function drawExpanded(progress) {
             expandCtx.font = `600 ${fontSize}px "Segoe UI", system-ui, sans-serif`;
             expandCtx.textAlign = 'center';
             expandCtx.textBaseline = 'bottom';
-            expandCtx.fillStyle = `rgba(192, 132, 252, ${fadeFactor})`;
+            expandCtx.fillStyle = `rgba(200, 164, 92, ${fadeFactor})`;
             expandCtx.fillText(label, x + barW / 2, y - 2);
             expandCtx.restore();
         }
@@ -1225,10 +1223,10 @@ function drawExpanded(progress) {
     if (progress > 0.55) {
         const lineProgress = Math.min(1, (progress - 0.55) / 0.45);
         if (showSelfLine && selfPoints.length > 0) {
-            drawLineOn(expandCtx, selfPoints, lineProgress, '#c084fc', 'rgba(192, 132, 252, 0.4)');
+            drawLineOn(expandCtx, selfPoints, lineProgress, '#e0c489', 'rgba(224, 196, 137, 0.4)');
         }
         if (showCumulativeLine && linePoints.length > 0) {
-            drawLineOn(expandCtx, linePoints, lineProgress, '#5b9eff', 'rgba(91, 158, 255, 0.4)');
+            drawLineOn(expandCtx, linePoints, lineProgress, '#c8a45c', 'rgba(200, 164, 92, 0.4)');
         }
     }
 
@@ -1243,7 +1241,7 @@ function drawExpanded(progress) {
         const x = ml + i * slot + slot / 2;
         let label = d.name;
         if (label.length > 8) label = label.slice(0, 7) + '…';
-        expandCtx.fillStyle = i < 5 ? '#8b909a' : '#5c626e';
+        expandCtx.fillStyle = i < 5 ? '#828590' : '#555560';
         expandCtx.fillText(label, x, mt + ch + 6);
     }
 }
@@ -1270,7 +1268,7 @@ function drawLineOn(ctx, points, progress, color, glowColor) {
 
     for (let i = 0; i < drawCount; i++) {
         const p = points[i];
-        ctx.fillStyle = '#0c0e13';
+        ctx.fillStyle = '#0a0a0c';
         ctx.beginPath();
         ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
         ctx.fill();

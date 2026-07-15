@@ -224,7 +224,7 @@ async function refreshTrack(path, itemEl) {
                 <span class="track-summary-item">变化: <span class="${deltaClass}">${deltaSign}${formatSize(diff.delta)}</span></span>
                 <span class="track-summary-item" style="color:var(--danger)">+${diff.added.length} 新增</span>
                 <span class="track-summary-item" style="color:var(--fg-subtle)">-${diff.removed.length} 删除</span>
-                <span class="track-summary-item" style="color:#f0a040">~${diff.changed.length} 变化</span>
+                <span class="track-summary-item" style="color:#828590">~${diff.changed.length} 变化</span>
             `;
         }
     } catch (e) {
@@ -302,7 +302,7 @@ function renderDiff(body, diff) {
     if (diff.changed.length > 0) {
         const title = document.createElement('div');
         title.className = 'track-diff-title';
-        title.style.color = '#f0a040';
+        title.style.color = '#828590';
         title.style.marginTop = '8px';
         title.textContent = `大小变化 (${diff.changed.length})`;
         section.appendChild(title);
