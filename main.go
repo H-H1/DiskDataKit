@@ -417,6 +417,19 @@ func (rs *RecentStore) List() []string {
 	return out
 }
 
+// Remove 删除一条最近访问记录（大小写不敏感）。
+func (rs *RecentStore) Remove(path string) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	for i, f := range rs.Folders {
+		if strings.EqualFold(f, path) {
+			rs.Folders = append(rs.Folders[:i], rs.Folders[i+1:]...)
+			rs.dirty = true
+			break
+		}
+	}
+}
+
 // Save 若有变更则保存到文件。
 func (rs *RecentStore) Save() error {
 	rs.mu.Lock()
@@ -613,6 +626,15 @@ func handleRecent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		recentFolders.Add(abs)
+		recentFolders.Save()
+		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	case http.MethodDelete:
+		path := r.URL.Query().Get("path")
+		if path == "" {
+			json.NewEncoder(w).Encode(map[string]any{"error": "缺少 path 参数"})
+			return
+		}
+		recentFolders.Remove(path)
 		recentFolders.Save()
 		json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	default:

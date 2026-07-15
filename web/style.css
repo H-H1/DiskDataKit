@@ -1013,6 +1013,38 @@ body {
     white-space: nowrap;
     font-family: var(--font-mono);
     font-size: 12.5px;
+    flex: 1;
+    min-width: 0;
+}
+
+.home-list-item-recent .home-list-icon,
+.home-list-item-recent .home-list-text {
+    cursor: pointer;
+}
+
+.home-list-del {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--fg-subtle);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s var(--ease);
+}
+
+.home-list-item-recent:hover .home-list-del {
+    opacity: 1;
+}
+
+.home-list-del:hover {
+    background: rgba(255, 107, 107, 0.15);
+    color: var(--danger);
 }
 
 .home-list-empty {
@@ -1028,6 +1060,7 @@ body {
     .home-hero { gap: 14px; padding-bottom: 20px; margin-bottom: 20px; }
     .home-logo { width: 52px; height: 52px; }
     .home-hero-text h2 { font-size: 22px; }
+    .header-model-label { display: none; }
 }
 
 .chart-hint {

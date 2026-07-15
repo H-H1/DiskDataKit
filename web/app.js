@@ -210,10 +210,12 @@ function renderHomeLists() {
         homeRecent.innerHTML = '<div class="home-list-empty">暂无最近访问记录</div>';
     } else {
         recentFolders.forEach(f => {
-            const item = document.createElement('button');
-            item.className = 'home-list-item';
-            item.innerHTML = `<span class="home-list-icon">🕘</span><span class="home-list-text" title="${f}">${f}</span>`;
-            item.onclick = () => { loadPath(f); };
+            const item = document.createElement('div');
+            item.className = 'home-list-item home-list-item-recent';
+            item.innerHTML = `<span class="home-list-icon">🕘</span><span class="home-list-text" title="${f}">${f}</span><button class="home-list-del" title="删除"><svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg></button>`;
+            item.querySelector('.home-list-text').onclick = () => { loadPath(f); };
+            item.querySelector('.home-list-icon').onclick = () => { loadPath(f); };
+            item.querySelector('.home-list-del').onclick = (e) => { e.stopPropagation(); removeRecent(f); };
             homeRecent.appendChild(item);
         });
     }
@@ -1351,6 +1353,17 @@ async function addRecent(path) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: path })
         });
+    } catch (err) {
+        // 静默忽略
+    }
+}
+
+// 删除最近访问记录
+async function removeRecent(path) {
+    try {
+        await fetch('/api/recent?path=' + encodeURIComponent(path), { method: 'DELETE' });
+        recentFolders = recentFolders.filter(f => f !== path);
+        renderHomeLists();
     } catch (err) {
         // 静默忽略
     }
