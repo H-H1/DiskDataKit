@@ -192,11 +192,31 @@ chatModelTrigger.addEventListener('click', (e) => {
     chatModelTrigger.classList.toggle('open');
 });
 
+// 顶栏下拉开关
+headerModelTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    headerModelOptions.classList.toggle('hidden');
+    headerModelTrigger.classList.toggle('open');
+});
+
+// 顶栏自定义模型按钮 -> 打开弹窗
+headerCustomModelBtn.addEventListener('click', async () => {
+    customModelModal.classList.remove('hidden');
+    if (cmProviders.length === 0) {
+        await loadCustomModelProviders();
+    }
+    resetCustomModelForm();
+});
+
 // 点击外部关闭下拉
 document.addEventListener('click', (e) => {
     if (!chatModelDropdown.contains(e.target)) {
         chatModelOptions.classList.add('hidden');
         chatModelTrigger.classList.remove('open');
+    }
+    if (!headerModelDropdown.contains(e.target)) {
+        headerModelOptions.classList.add('hidden');
+        headerModelTrigger.classList.remove('open');
     }
 });
 
@@ -448,25 +468,26 @@ const cmMyModelsList = document.getElementById('cmMyModelsList');
 let cmProviders = [];
 let cmFetchedModels = [];
 
-// 打开弹窗
-chatCustomModelBtn.addEventListener('click', async () => {
-    customModelModal.classList.remove('hidden');
-    if (cmProviders.length === 0) {
-        try {
-            const resp = await fetch('/api/chat/providers');
-            const data = await resp.json();
-            cmProviders = data.providers || [];
-            cmProviderSelect.innerHTML = '<option value="">请选择厂商...</option>';
-            for (const p of cmProviders) {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = `${p.name} · ${p.region}`;
-                cmProviderSelect.appendChild(opt);
-            }
-        } catch (e) {
-            showCmStatus('加载厂商列表失败: ' + e.message, 'error');
+// 加载厂商列表
+async function loadCustomModelProviders() {
+    try {
+        const resp = await fetch('/api/chat/providers');
+        const data = await resp.json();
+        cmProviders = data.providers || [];
+        cmProviderSelect.innerHTML = '<option value="">请选择厂商...</option>';
+        for (const p of cmProviders) {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.name} · ${p.region}`;
+            cmProviderSelect.appendChild(opt);
         }
+    } catch (e) {
+        showCmStatus('加载厂商列表失败: ' + e.message, 'error');
     }
+}
+
+// 重置表单
+function resetCustomModelForm() {
     cmApiKey.value = '';
     cmModelList.innerHTML = '<div class="custom-model-empty">请先获取模型列表</div>';
     cmModelCount.textContent = '';
@@ -474,6 +495,15 @@ chatCustomModelBtn.addEventListener('click', async () => {
     cmSaveBtn.classList.add('not-ready');
     hideCmStatus();
     loadMyModels();
+}
+
+// 打开弹窗
+chatCustomModelBtn.addEventListener('click', async () => {
+    customModelModal.classList.remove('hidden');
+    if (cmProviders.length === 0) {
+        await loadCustomModelProviders();
+    }
+    resetCustomModelForm();
 });
 
 customModelClose.addEventListener('click', () => customModelModal.classList.add('hidden'));
