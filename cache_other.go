@@ -3,4 +3,4 @@
 package main
 
 // scanCacheEntries 在不支持的平台返回空。
-func scanCacheEntries() []CacheEntry { return nil }
+func scanCacheEntries(maxDepth int) []CacheEntry { return nil }

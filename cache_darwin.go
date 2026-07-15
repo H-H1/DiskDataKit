@@ -9,7 +9,7 @@ import (
 
 // scanCacheEntries 扫描 macOS 缓存目录：~/Library/Caches 下的每个子目录、
 // ~/.cache、/Library/Caches，以及 npm/pip 等开发工具缓存。
-func scanCacheEntries() []CacheEntry {
+func scanCacheEntries(maxDepth int) []CacheEntry {
 	var entries []CacheEntry
 	home, err := os.UserHomeDir()
 	if err != nil {

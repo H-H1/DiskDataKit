@@ -133,6 +133,7 @@ func main() {
 	http.HandleFunc("/api/scan/list", handleScanList)
 	http.HandleFunc("/api/scan/cache", handleScanCache)
 	http.HandleFunc("/api/cache/list", handleCacheList)
+	http.HandleFunc("/api/cache/cache", handleCacheCache)
 	http.HandleFunc("/api/cache/delete", handleCacheDelete)
 	http.HandleFunc("/api/track/list", handleTrackList)
 	http.HandleFunc("/api/track/add", handleTrackAdd)
@@ -663,7 +664,12 @@ func handleOpenInExplorer(w http.ResponseWriter, r *http.Request) {
 	var cmd *exec.Cmd
 	switch {
 	case isWindows:
-		cmd = exec.Command("explorer.exe", "/select,"+abs)
+		// 目录直接打开，文件用 /select 选中
+		if info, err := os.Stat(abs); err == nil && info.IsDir() {
+			cmd = exec.Command("explorer.exe", abs)
+		} else {
+			cmd = exec.Command("explorer.exe", "/select,"+abs)
+		}
 	case isDarwin:
 		// macOS: open -R 选中文件
 		cmd = exec.Command("open", "-R", abs)

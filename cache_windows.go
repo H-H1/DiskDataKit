@@ -11,7 +11,10 @@ import (
 
 // scanCacheEntries 扫描 Windows 常见缓存目录：在 LocalAppData/AppData/ProgramData 下
 // 查找名字含 "cache" 的目录（深度限制 5），以及 Temp、UWP LocalCache、浏览器缓存等。
-func scanCacheEntries() []CacheEntry {
+func scanCacheEntries(maxDepth int) []CacheEntry {
+	if maxDepth <= 0 {
+		maxDepth = 3
+	}
 	var entries []CacheEntry
 	seen := make(map[string]bool)
 
@@ -35,7 +38,7 @@ func scanCacheEntries() []CacheEntry {
 			rel := strings.TrimPrefix(p, root)
 			rel = strings.Trim(rel, string(filepath.Separator))
 			depth := strings.Count(rel, string(filepath.Separator))
-			if depth >= 5 {
+			if depth >= maxDepth {
 				return filepath.SkipDir
 			}
 			name := strings.ToLower(d.Name())

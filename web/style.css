@@ -2087,6 +2087,29 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 14px;
     margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cache-depth-label {
+    font-size: 12px;
+    color: var(--text-2, #aaa);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cache-depth-input {
+    width: 50px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-1, #eee);
+    font-size: 13px;
+    text-align: center;
 }
 
 .startup-rescan-btn {
@@ -2350,18 +2373,21 @@ body {
 }
 
 /* 在 startup-box 内不自行滚动，由 startup-body 统一滚动，sticky 才能生效 */
-.startup-box .scan-list {
+.startup-box .scan-list,
+.startup-box .startup-list {
     max-height: none;
     overflow: visible;
 }
 
 /* overflow: hidden 会破坏子元素 sticky，scan-list 内改为 visible */
-.scan-list .startup-group {
+.scan-list .startup-group,
+.startup-list .startup-group {
     overflow: visible;
 }
 
 /* 滚动时固定顶部信息栏 */
-.scan-list .scan-sticky-header {
+.scan-list .scan-sticky-header,
+.startup-list .scan-sticky-header {
     position: sticky;
     top: 0;
     z-index: 20;
@@ -2370,16 +2396,19 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
-.scan-list .scan-sticky-header .startup-back-bar {
+.scan-list .scan-sticky-header .startup-back-bar,
+.startup-list .scan-sticky-header .startup-back-bar {
     margin-bottom: 6px;
 }
 
-.scan-list .scan-sticky-header .startup-cache-bar {
+.scan-list .scan-sticky-header .startup-cache-bar,
+.startup-list .scan-sticky-header .startup-cache-bar {
     margin-bottom: 0;
 }
 
 /* 滚动时固定分类标题，top 由 JS 动态设置 */
-.scan-list .startup-group-header {
+.scan-list .startup-group-header,
+.startup-list .startup-group-header {
     position: sticky;
     z-index: 15;
     background: var(--surface-solid);

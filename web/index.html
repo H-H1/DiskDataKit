@@ -250,28 +250,20 @@
 
         <!-- 软件缓存清理弹窗 -->
         <div id="cacheModal" class="modal-overlay hidden">
-            <div class="modal-box cleanup-box">
+            <div class="modal-box cleanup-box startup-box">
                 <div class="cleanup-header">
                     <span class="modal-title">软件缓存清理</span>
                     <button id="cacheClose" class="expand-close" title="关闭">×</button>
                 </div>
-                <p class="modal-desc">AI 分析各软件缓存位置，勾选后清理（右键可打开文件所在位置）</p>
-                <div id="cacheStatus" class="cleanup-status"></div>
-                <div id="cacheList" class="cleanup-list cache-list hidden"></div>
-                <div id="cacheActions" class="cleanup-actions hidden">
-                    <div class="cleanup-summary">
-                        <label class="cleanup-select-all">
-                            <input type="checkbox" id="cacheSelectAll" checked>
-                            <span>全选</span>
-                        </label>
-                        <span id="cacheTotal" class="cleanup-total"></span>
-                    </div>
-                    <div class="modal-actions">
-                        <button id="cacheCancel" class="btn btn-ghost">取消</button>
-                        <button id="cacheDeleteBtn" class="btn btn-danger">清理选中</button>
-                    </div>
+                <p class="modal-desc">AI 分析各软件缓存位置，勾选后清理（右键可打开文件所在位置，可以手动清理）</p>
+                <div class="startup-body">
+                    <div id="cacheStatus" class="cleanup-status"></div>
+                    <div id="cacheList" class="cleanup-list cache-list startup-list hidden"></div>
                 </div>
-                <div id="cacheResult" class="cleanup-result hidden"></div>
+                <div class="startup-footer">
+                    <label class="cache-depth-label">扫描深度 <input type="number" id="cacheDepthInput" class="cache-depth-input" value="3" min="1" max="20"></label>
+                    <button id="cacheRescanBtn" class="startup-rescan-btn">重新扫描</button>
+                </div>
             </div>
         </div>
 
