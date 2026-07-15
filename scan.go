@@ -77,6 +77,11 @@ func handleScanList(w http.ResponseWriter, r *http.Request) {
 	items := scanAll()
 	aiJudgeScanItems(items)
 
+	// 可疑项置顶：suspicious -> unknown -> safe
+	sort.SliceStable(items, func(i, j int) bool {
+		return scanVerdictRank(items[i].Verdict) < scanVerdictRank(items[j].Verdict)
+	})
+
 	// 保存到缓存目录
 	now := time.Now()
 	id := now.Format("20060102_150405")
@@ -180,6 +185,18 @@ func handleScanCache(w http.ResponseWriter, r *http.Request) {
 	})
 
 	json.NewEncoder(w).Encode(map[string]any{"records": records})
+}
+
+// scanVerdictRank 返回判定结果的排序权重，值越小越靠前。
+func scanVerdictRank(verdict string) int {
+	switch verdict {
+	case "suspicious":
+		return 0
+	case "unknown":
+		return 1
+	default:
+		return 2
+	}
 }
 
 // aiJudgeScanItems 并发调用大模型判断每项是否可疑，填充 ZhName/Verdict/Reason。
