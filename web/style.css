@@ -1531,8 +1531,11 @@ body {
 }
 
 .chat-welcome-icon {
-    font-size: 32px;
     margin-bottom: 12px;
+}
+
+.chat-welcome-icon img {
+    border-radius: 16px;
 }
 
 .chat-welcome p {
@@ -1575,6 +1578,13 @@ body {
 
 .chat-msg.assistant .chat-msg-avatar {
     background: linear-gradient(135deg, #c8a45c, #c8a45c);
+    overflow: hidden;
+}
+
+.chat-msg.assistant .chat-msg-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .chat-msg.user .chat-msg-avatar {

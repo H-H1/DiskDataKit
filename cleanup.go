@@ -305,13 +305,17 @@ func cleanDir(path string) error {
 	}
 
 	var errs []string
+	skipped := 0 // 程序占用或无法删除的文件数
 
 	// 先删除所有文件
 	for _, f := range files {
 		if err := os.Remove(f); err != nil {
 			// 忽略不存在的文件
 			if !os.IsNotExist(err) {
-				errs = append(errs, fmt.Sprintf("%s: %v", filepath.Base(f), err))
+				skipped++
+				if devMode {
+					errs = append(errs, fmt.Sprintf("%s: %v", filepath.Base(f), err))
+				}
 			}
 		}
 	}
@@ -321,13 +325,20 @@ func cleanDir(path string) error {
 		if err := os.Remove(dirs[i]); err != nil {
 			// 目录非空或权限不足，忽略不存在的
 			if !os.IsNotExist(err) {
-				errs = append(errs, fmt.Sprintf("%s: %v", filepath.Base(dirs[i]), err))
+				skipped++
+				if devMode {
+					errs = append(errs, fmt.Sprintf("%s: %v", filepath.Base(dirs[i]), err))
+				}
 			}
 		}
 	}
 
-	if len(errs) > 0 {
-		return fmt.Errorf("部分文件无法删除: %s", strings.Join(errs, "; "))
+	if skipped > 0 {
+		msg := fmt.Sprintf("程序正在占用或想要手动清理（共 %d 项跳过）", skipped)
+		if devMode && len(errs) > 0 {
+			msg += ": " + strings.Join(errs, "; ")
+		}
+		return fmt.Errorf("%s", msg)
 	}
 	return nil
 }

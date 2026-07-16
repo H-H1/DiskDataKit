@@ -323,7 +323,13 @@ function addMessage(role, content) {
 
     const avatar = document.createElement('div');
     avatar.className = 'chat-msg-avatar';
-    avatar.textContent = role === 'user' ? '🧑' : role === 'error' ? '⚠' : '🤖';
+    if (role === 'user') {
+        avatar.textContent = '🧑';
+    } else if (role === 'error') {
+        avatar.textContent = '⚠';
+    } else {
+        avatar.innerHTML = '<img src="ioc.png" alt="DiskDataKit">';
+    }
 
     const body = document.createElement('div');
     body.className = 'chat-msg-body';
@@ -395,7 +401,7 @@ chatNewBtn.addEventListener('click', async () => {
     }
     chatMessages.innerHTML = `
         <div class="chat-welcome">
-            <div class="chat-welcome-icon">🤖</div>
+            <div class="chat-welcome-icon"><img src="ioc.png" width="67" height="69" alt="DiskDataKit"></div>
             <p>新对话已开始</p>
             <p class="chat-welcome-hint">上下文记忆已清除</p>
         </div>`;
@@ -616,7 +622,37 @@ cmSaveBtn.addEventListener('click', async () => {
         return;
     }
     if (selectedModels.length === 0) {
-        showCmStatus('请先获取模型并至少勾选一个模型', 'error');
+        // 用户可能只是想删除已配置的模型，允许空列表保存
+        cmSaveBtn.disabled = true;
+        cmSaveBtn.textContent = '保存中...';
+        showCmStatus('正在保存配置...', 'loading');
+        let ok = false;
+        try {
+            const resp = await fetch('/api/chat/config/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider, api_key: apiKey, models: [] })
+            });
+            const data = await resp.json();
+            if (data.error) {
+                showCmStatus(data.error, 'error');
+            } else {
+                ok = true;
+                showCmStatus('配置已保存（未选择模型）', 'success');
+            }
+        } catch (e) {
+            showCmStatus('保存失败: ' + e.message, 'error');
+        }
+        setTimeout(() => {
+            cmSaveBtn.disabled = false;
+            cmSaveBtn.textContent = '保存';
+            updateCmSaveBtn();
+        }, ok ? 1000 : 200);
+        if (ok) {
+            setTimeout(() => {
+                Promise.all([initChat(), loadMyModels()]).catch(() => {});
+            }, 800);
+        }
         return;
     }
     // 保存中禁用防重复点击
@@ -638,7 +674,7 @@ cmSaveBtn.addEventListener('click', async () => {
             showCmStatus(data.error, 'error');
         } else {
             ok = true;
-            showCmStatus('配置已保存，正在重新加载...', 'success');
+            showCmStatus('配置已保存', 'success');
         }
     } catch (e) {
         console.log('[cmSave] fetch 异常:', e);
