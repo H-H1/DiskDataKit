@@ -96,13 +96,9 @@ func initAI() {
 		Default:      "deepseek-v4-pro",
 		SystemPrompt: defaultPrompt,
 		ProvidersModel: map[string]AIProviderCfg{
-			"deepseek-v4-pro": {
-				Keys:    []string{"sk-903626bbe0df4f34b631d313dab375a0"},
-				BaseURL: "https://api.deepseek.com",
-			},
-			"deepseek-v4-flash": {
-				Keys:    []string{"sk-903626bbe0df4f34b631d313dab375a0"},
-				BaseURL: "https://api.deepseek.com",
+			"agnes-2.5-flash": {
+				Keys:    []string{"sk-b7MMWfiMvK3FIq11qOxzQS9tZGsf2GlgYDqTFG4PWKONDIkd"},
+				BaseURL: "https://api.agnes-ai.cn/v1/chat/completions",
 			},
 		},
 	}
