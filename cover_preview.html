@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiskDataKit 视频封面</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #050506; color: #e0c489; font-family: -apple-system, "Microsoft YaHei", sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 40px; padding: 40px 20px; }
+h1 { font-size: 24px; color: #c8a45c; }
+p.desc { color: #555; font-size: 14px; }
+.cover-group { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; }
+.cover-box { text-align: center; }
+.cover-box h3 { color: #c8a45c; margin-bottom: 12px; font-size: 16px; }
+.cover-box .size { color: #555; font-size: 12px; margin-bottom: 8px; }
+
+/* 封面容器 */
+.cover {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    background: #050506;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.cover.landscape { width: 640px; height: 360px; }
+.cover.portrait { width: 270px; height: 480px; }
+
+/* 背景光效 */
+.cover::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%; height: 60%;
+    background: radial-gradient(circle, rgba(200,164,92,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+.cover::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(200,164,92,0.04) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(200,164,92,0.03) 0%, transparent 40%);
+    pointer-events: none;
+}
+
+/* 图标 */
+.cover-icon {
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(200,164,92,0.15);
+    position: relative;
+    z-index: 1;
+}
+.cover.landscape .cover-icon { width: 100px; height: 100px; }
+.cover.portrait .cover-icon { width: 80px; height: 80px; }
+
+/* 标题 */
+.cover-title {
+    color: #e0c489;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+}
+.cover.landscape .cover-title { font-size: 28px; }
+.cover.portrait .cover-title { font-size: 22px; }
+
+/* 副标题 */
+.cover-subtitle {
+    color: #555;
+    font-size: 13px;
+    letter-spacing: 1px;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+}
+.cover.landscape .cover-subtitle { font-size: 14px; }
+.cover.portrait .cover-subtitle { font-size: 12px; }
+
+/* 标签 */
+.cover-tags {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    position: relative;
+    z-index: 1;
+}
+.cover-tag {
+    padding: 4px 14px;
+    border: 1px solid rgba(200,164,92,0.3);
+    border-radius: 20px;
+    color: #c8a45c;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+.cover.portrait .cover-tag { font-size: 10px; padding: 3px 10px; }
+
+/* 提示 */
+.tip { color: #444; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h1>DiskDataKit 视频封面</h1>
+<p class="desc">使用产品图标生成，右键封面区域截图或整页截图保存</p>
+
+<div class="cover-group">
+    <div class="cover-box">
+        <h3>横屏封面 (16:9)</h3>
+        <div class="size">1920 x 1080</div>
+        <div class="cover landscape" id="coverLandscape">
+            <img class="cover-icon" src="ioc.png" alt="DiskDataKit">
+            <div class="cover-title">DiskDataKit</div>
+            <div class="cover-subtitle">磁盘数据管理与 AI 智能分析工具</div>
+            <div class="cover-tags">
+                <span class="cover-tag">磁盘可视化</span>
+                <span class="cover-tag">AI 分析</span>
+                <span class="cover-tag">系统清理</span>
+            </div>
+        </div>
+        <p class="tip">适合 B站 / YouTube</p>
+    </div>
+
+    <div class="cover-box">
+        <h3>竖屏封面 (9:16)</h3>
+        <div class="size">1080 x 1920</div>
+        <div class="cover portrait" id="coverPortrait">
+            <img class="cover-icon" src="ioc.png" alt="DiskDataKit">
+            <div class="cover-title">DiskDataKit</div>
+            <div class="cover-subtitle">磁盘数据管理与 AI 智能分析工具</div>
+            <div class="cover-tags">
+                <span class="cover-tag">磁盘可视化</span>
+                <span class="cover-tag">AI 分析</span>
+                <span class="cover-tag">系统清理</span>
+            </div>
+        </div>
+        <p class="tip">适合抖音 / 小红书</p>
+    </div>
+</div>
+</body>
+</html>
